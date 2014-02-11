@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QUnit tests of MVCoffee model validations</title>
+  <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.13.0.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+  <script src="http://code.jquery.com/qunit/qunit-1.13.0.js"></script>
+  
+  <!-- This is the actually library that we are testing.  Make sure you run 
+  
+        cake build
+        
+    from the project root directory before running these tests.
+  -->
+  <script src="../lib/mvcoffee.js"></script>
+  
+  <!-- This are compiled subclasses of MVCoffee models used for exercising the 
+    capabilities of a model object.  Make sure you run
+    
+        cake test
+        
+    from the project root directory to create these files before running these tests.
+  -->
+  <script src="js/coffee/models.js"></script>
+  
+  <!--
+    The acceptance validator test, for no reason other than it's first alphabetically,
+    exercises all the flags of a validator: display, message, allow_null, allow_blank,
+    only_if and unless.  This is the only validator that goes through that much 
+    thoroughness.  I'm quite confident, since all validators share the same code, that
+    if it works for one, it can work for all.  So not all flags are exercised as 
+    tediously in all validators.  If you want to try any other combinations of flags,
+    this is the place to do it.  
+  -->
+  <script src="js/acceptance_validator_test.js"></script>
+
+  <script src="js/confirmation_validator_test.js"></script>    
+  <script src="js/email_validator_test.js"></script>    
+  <script src="js/exclusion_validator_test.js"></script>    
+  <script src="js/format_validator_test.js"></script>    
+  <script src="js/inclusion_validator_test.js"></script>    
+  <script src="js/length_validator_test.js"></script>    
+  <script src="js/numericality_validator_test.js"></script>
+
+  <!--
+    The presence validator test is the one test that runs off a fully subclassed model,
+    rather than one built on the fly in the "module" section of the test.  It is in
+    the file test/js/coffee/presence_model.coffee.  Building models in this manner for
+    every validator would be overkill, but I do want to exercise the capability at least
+    once.  This is the place to do it.
+  -->
+  <script src="js/presence_validator_test.js"></script>    
+  <script src="js/absence_validator_test.js"></script>
+
+  <!--
+    This is the catch all if the test name is not one that is built in.  It should be
+    the name of a method on the model, just like rails validation with custom methods.
+  -->
+  <script src="js/custom_validator_test.js"></script>    
+</body>
+</html>

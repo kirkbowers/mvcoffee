@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QUnit tests of MVCoffee model population</title>
+  <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.13.0.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+  <script src="http://code.jquery.com/qunit/qunit-1.13.0.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  
+  <!-- This is the actually library that we are testing.  Make sure you run 
+  
+        cake build
+        
+    from the project root directory before running these tests.
+  -->
+  <script src="../lib/mvcoffee.js"></script>
+  
+  <!-- This are compiled subclasses of MVCoffee models used for exercising the 
+    capabilities of a model object.  Make sure you run
+    
+        cake test
+        
+    from the project root directory to create these files before running these tests.
+  -->
+  <script src="js/coffee/models.js"></script>
+  
+  <script src="js/population_test.js"></script>
+
+  
+  <form>
+    <label for"population_city">City name</label>
+    <input type="text" id="population_city" disabled="true" value="Portland"></input><br>
+    <label for"population_description">Description</label>
+    <textarea id="population_description" disabled="true">Beautiful in summer, rainy in winter.</textarea><br>
+    <label for"population_population">Population</label>
+    <input type="text" id="population_population" disabled="true" value="603106"></input><br>
+    <label for"population_has_great_brewpubs">Has great brewpubs?</label>
+    <input type="checkbox" id="population_has_great_brewpubs" disabled="true" checked></input><br>
+    <label for"population_is_warm_in_winter">Is warm in winter?</label>
+    <input type="checkbox" id="population_is_warm_in_winter" disabled="true"></input><br>
+  
+  </form>
+  
+</body>
+</html>

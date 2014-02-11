@@ -1,0 +1,5 @@
+{
+  "name": "mvcoffee",
+  "version": "0.0.1",
+  "main": "./lib/mvcoffee.js"
+}

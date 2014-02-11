@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ControllerTest</title>
+  <%= stylesheet_link_tag    "application", media: "all", "data-turbolinks-track" => true %>
+  <%= javascript_include_tag "application", "data-turbolinks-track" => true %>
+  <%= csrf_meta_tags %>
+</head>
+<body <%= yield :body_id %> >
+
+<%= yield %>
+
+<h2><%= link_to 'Default Timer', test_default_timer_path %></h2>
+<ul class="default_timer">
+</ul>
+
+<h2><%= link_to 'Override Timer', test_override_timer_path %></h2>
+<ul class="override_timer">
+</ul>
+
+<h2><%= link_to 'No Timer', test_no_timer_path %></h2>
+<ul class="no_timer">
+</ul>
+
+<h2><%= link_to 'No Refresh', test_no_refresh_path %></h2>
+<ul class="no_refresh">
+</ul>
+
+
+</body>
+</html>
