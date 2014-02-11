@@ -357,7 +357,7 @@ JavaScript.  `in: 3..10` can be accomplished by using both a minimum and a maxim
 
 The default error message for `minimum:` is "is too short (minimum is #{value} 
 characters)".  The default error message for `maximum:` is "is too long (maximum is
-#{value} characters)".  The default error message for `is:` is
+ #{value} characters)".  The default error message for `is:` is
 "is the wrong length (must be #{value} characters)".
 
 #### numericality
