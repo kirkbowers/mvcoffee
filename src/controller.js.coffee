@@ -11,18 +11,17 @@ class MVCoffee.ControllerManager
       if jQuery(contr.selector).length > 0
         newActive = contr
     
-    if @active? and @active isnt newActive
+    if @active?
       # We need to start a new controller, so make sure we stop the current one if 
       # this is one
       @active.stop()
       window.onbeforeunload = null
       
     if newActive?
-      if @active isnt newActive
-        @active = newActive
-        @active.start()
-        window.onbeforeunload = =>
-          @active.stop()
+      @active = newActive
+      @active.start()
+      window.onbeforeunload = =>
+        @active.stop()
     else
       @active = null
 
