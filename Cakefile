@@ -76,9 +76,9 @@ test = (callback) ->
       throw err if err
       console.log stdout + stderr
       
-      console.log("Copying mvcoffee.js to controller_test project")
-      copyFile('lib/mvcoffee.js',
-        'test/controller_test/lib/assets/javascripts/mvcoffee.js',
+      console.log("Copying mvcoffee.min.js to controller_test project")
+      copyFile('lib/mvcoffee.min.js',
+        'test/controller_test/lib/assets/javascripts/mvcoffee.min.js',
         (err) ->
           throw err if err
       )
@@ -111,6 +111,10 @@ task 'clean', 'Remove all product files for a clean slate', ->
   # Delete only the files that end in .js, NOT the .coffee files
   console.log("Removing compiled test models")
   rmdirContents "test/js/coffee/", /\.js$/
+
+  # Delete lib files from controller test
+  console.log("Removing lib files from controller_test")
+  rmdirContents "test/controller_test/lib/assets/javascripts/", /\.js$/
   
   # Delete the html files in the root directory, NOT the files in test
   # Those in this directory are produced by "compiling" the markdown files into html
@@ -125,7 +129,8 @@ task 'minify', 'Build and minify lib/mvcoffee.js to lib/mvcoffee.min.js', ->
 
 
 task 'test', 'Build project and compile the coffee files needed to run the QUnit tests', ->
-  depend build, test
+  depend build, ->
+    depend minify, test
   
 task 'all', 'Build project, minify and compile files needed to run QUnity tests', ->
   depend build, ->

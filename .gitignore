@@ -3,3 +3,4 @@
 README.html
 HOW_TO_TEST.html
 /test/controller_test/lib/assets/javascripts/mvcoffee.js
+/test/controller_test/lib/assets/javascripts/mvcoffee.min.js
