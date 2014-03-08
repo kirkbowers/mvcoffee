@@ -1,5 +1,19 @@
 #!/usr/bin/env ruby
 
+# This is a really quick and dirty utility for porting QUnit tests to jasmine in 
+# CoffeeScript.  It gets you _most_ of the way there.  It still requires a bit of 
+# hand editing, but very little.
+# To protect against overwriting your hand edits, the preferred workflow is:
+#
+#     mkdir tmp
+#     util/qunit2jasmine.rb test/js/some_file_test.js > tmp/some_file_spec.coffee
+#     cp -n tmp/some_file_spec.coffee test/spec_coffee/
+#
+# The -n flag will protect against overwriting your hand edits.  It's also a good idea
+# to check into git right the second the tests work.
+#
+# Author :: Kirk Bowers
+
 lines = File.open(ARGV[0]).readlines
 
 mode = :none
