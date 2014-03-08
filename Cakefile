@@ -141,7 +141,7 @@ task 'minify', 'Build and minify lib/mvcoffee.js to lib/mvcoffee.min.js', ->
   depend build, minify
 
 
-task 'test', 'Build project and compile the coffee files needed to run the QUnit tests', ->
+task 'test-build', 'Build project and compile the coffee files needed to run the QUnit tests', ->
   depend build, ->
     depend minify, test
     

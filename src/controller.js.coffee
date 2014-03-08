@@ -22,19 +22,17 @@ class MVCoffee.Controller
         
     if @refresh?
       @startTimer()
-
-      window.onfocus = =>
-        # Related to the comment above, if isActive is true, we're already sitting on
-        # this page the window already has focus, so don't refresh unnecessarily.
-        unless @isActive
-          @isActive = true
-          @refresh()
-          @startTimer()
-        
-      window.onblur = =>
-        @isActive = false
-        @stopTimer()
-        
+       
+  resume: ->
+    if @refresh? and not @isActive
+      @isActive = true
+      @refresh()
+      @startTimer()      
+  
+  pause: ->
+    if @refresh?
+      @isActive = false
+      @stopTimer()
       
   stop: ->
     @isActive = false

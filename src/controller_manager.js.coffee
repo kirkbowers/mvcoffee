@@ -1,16 +1,16 @@
 class MVCoffee.ControllerManager
   constructor: (contrs = {}) ->
     @controllers = {}
-    @active = null
+    @active = []
 
-    console.log("controller manager constructor, #{contrs}")
+    # console.log("controller manager constructor, #{contrs}")
 
     for id, contr of contrs
       @addController(new contr, id)
 
 
   addController: (contr, id) ->
-    console.log("adding controller with id #{id}")
+    # console.log("adding controller with id #{id}")
     if id?
       @controllers[id] = contr
     else
@@ -18,24 +18,37 @@ class MVCoffee.ControllerManager
       @controllers[contr.selector] = contr
 
   go: ->
-    newActive = null
+    newActive = []
     for id, contr of @controllers
-      console.log("looking for id -#{id}-")
-      if jQuery("body##{id}").length > 0
-        console.log("found it")
-        newActive = contr
+      if jQuery("##{id}").length > 0
+        newActive.push contr
     
     if @active?
       # We need to start a new controller, so make sure we stop the current one if 
       # this is one
-      @active.stop()
+      for contr in @active
+        contr.stop()
       window.onbeforeunload = null
+      window.onfocus = null
+      window.onblur = null
       
-    if newActive?
+    if newActive.length
+      # console.log("Number of active controllers is " + newActive.length)
       @active = newActive
-      @active.start()
-      window.onbeforeunload = =>
-        @active.stop()
+      for contr in @active
+        contr.start()
+      # Turns out we don't need to do this onbeforeunload.
+      # Everything will just stop anyway as javascript is purged from memory
+      #       window.onbeforeunload = =>
+      #         for contr in @active
+      #           contr.stop()
+      window.onfocus = =>
+        for contr in @active
+          contr.resume()
+      window.onblur = =>
+        for contr in @active
+          contr.pause()
+          
     else
-      @active = null
+      @active = []
 
