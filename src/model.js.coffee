@@ -19,19 +19,27 @@ class MVCoffee.Model
   #----------------------------------------------------------------------------
   # Static query method definitions
   
+  @order: (array, order) ->
+    result = array
+    [prop, desc] = order.split(/\s+/)
+    value = 1
+    if desc? is "desc"
+      value = -1
+    result.sort (a, b) ->
+      if a[prop] > b[prop]
+        value
+      else
+        -value
+    result
+  
   @all: (options = {})->
     result = @prototype.modelStore.all(@prototype.modelName)
     if options.order
-      [prop, desc] = options.order.split(/\s+/)
-      value = 1
-      if desc? is "desc"
-        value = -1
-      result.sort (a, b) ->
-        if a[prop] > b[prop]
-          value
-        else
-          -value
+      result = @sort(result, options.order)
     result
+    
+  @find: (id) ->
+    @prototype.modelStore.find(@prototype.modelName, id)
 
   #----------------------------------------------------------------------------
   # Macro method definitions
@@ -120,18 +128,22 @@ class MVCoffee.Model
   # the has_many method in rails.  The best I could think to do was provide both, one
   # as sort of an alias to the other.
   @hasMany: (name, options = {}) ->
-    methodName = options.as || name
-    foreignKey = options.foreign_key || "#{@prototype.modelName}_id"
+    methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
     # Stash this reference, because "this" is about to change
-    dataStore = @prototype.dataStore
+    self = this
     @prototype[methodName] = ->
+      modelStore = self.prototype.modelStore
+      foreignKey = options.foreign_key || "#{self.prototype.modelName}_id"
+      
       # @ now refers to the object "this", not the static class "this"
       result = []
-      if dataStore?
-        result = dataStore.where(name, "{@[foreignKey]}": @id)
+      if modelStore?
+        constraints = {}
+        constraints[foreignKey] = @id
+        result = modelStore.where(name, constraints)
         
-      # TODO!!!
-      # Handle other options, like sort order
+      if options.order
+        result = self.order(result, options.order)
       result
     
   @has_many: @hasMany
@@ -145,9 +157,7 @@ class MVCoffee.Model
       modelStore = self.prototype.modelStore
       # @ now refers to the object "this", not the static class "this"
       result = null
-      console.log "in belongsTo created method, modelStore = #{modelStore}"
       if modelStore?
-        console.log "this foreignKey = #{@[foreignKey]}"
         result = modelStore.find(name, @[foreignKey])
         
       # TODO!!!

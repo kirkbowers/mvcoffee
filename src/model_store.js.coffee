@@ -16,7 +16,8 @@ class MVCoffee.ModelStore
     
     # Stash the name of this model and this model store back on the prototype of the
     # class for this model.  Both will come in handy for doing queries.
-    classdef.prototype.modelName = name
+    classdef.prototype.modelName ||= name
+    classdef.prototype.modelNamePlural ||= MVCoffee.Pluralizer.pluralize(name)
     classdef.prototype.modelStore = this
     
     # Initialize the store for this model
@@ -51,14 +52,17 @@ class MVCoffee.ModelStore
         result[objName] = data[objName]
         
     result
-    
+      
+  # find finds the one record that is of the model supplied and has the id supplied
   find: (model, id) ->
     @store[model]?[id]
     
+  # findBy finds the first record of a model that match all conditions given
+  # conditions is a hash of column names and values to match
   findBy: (model, conditions) ->
-    records = @store[model]
+    records = @store[model] ? {}
     result = null
-    for record of records
+    for id, record of records
       match = true
       for prop, value of conditions
         if record[prop] isnt value
@@ -66,10 +70,12 @@ class MVCoffee.ModelStore
       result ||= record if match 
     result  
       
+  # where finds all the records of a model that match all conditions given
+  # conditions is a hash of column names and values to match
   where: (model, conditions) ->
     records = @store[model]
     result = []
-    for record of records
+    for id, record of records
       match = true
       for prop, value of conditions
         if record[prop] isnt value
@@ -77,6 +83,7 @@ class MVCoffee.ModelStore
       result.push(record) if match
     result
     
+  # Pulls all records for a model that are currently in the cache
   all: (model) ->
     records = @store[model]
     result = []

@@ -1,8 +1,10 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
+sh = require 'execSync'
 
 appFiles = [
   'main'
+  'pluralizer'
   'controller_manager'
   'controller'
   'model_store'
@@ -71,6 +73,16 @@ minify = (callback) ->
     console.log stdout + stderr
     callback() if callback?
 
+compile_specs = (callback) ->
+  console.log("Compiling jasmine specs written in coffee")
+  path = "test/spec_coffee"
+  files = fs.readdirSync(path)
+  for file in files
+    result = file.replace(/\.coffee$/, ".js")
+    sh.run "coffee --compile -o test #{path}/#{file}"
+    sh.run "jasmine-node test/#{result}"
+  callback() if callback?
+
 test = (callback) ->
   console.log("Compiling test model files")
   exec 'coffee -j models.js -o test/js/coffee test/js/coffee/*.coffee', 
@@ -133,6 +145,9 @@ task 'minify', 'Build and minify lib/mvcoffee.js to lib/mvcoffee.min.js', ->
 task 'test', 'Build project and compile the coffee files needed to run the QUnit tests', ->
   depend build, ->
     depend minify, test
+    
+task 'spec', 'Build the jasmine specs written in coffeescript and run them', ->
+  depend build, compile_specs
   
 task 'all', 'Build project, minify and compile files needed to run QUnity tests', ->
   depend build, ->
