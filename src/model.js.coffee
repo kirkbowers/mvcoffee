@@ -60,7 +60,11 @@ class MVCoffee.Model
   # provides a much cleaner syntax.
   @validates: (field, test) ->
     # This is the trick to doing a "macro method" in javascript
-    # We have to operate on the prototype of this
+    # We have to operate on the prototype of this.
+    # We also have to guard against working on the parent class prototype inadvertantly.
+    # So we need to check if we have our own property fields first and create it if we
+    # don't
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
     fields = @prototype.fields
 
     # If there is already an object on the fields property that has this field name,
@@ -99,6 +103,7 @@ class MVCoffee.Model
   # the type of.  The typical use would be:
   #    it.types "some_field", "boolean"
   @types: (field, type) ->
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
     fields = @prototype.fields
 
     index = @findFieldIndex(field)
@@ -111,6 +116,7 @@ class MVCoffee.Model
       fields[index].type = type    
       
   @displays: (field, display) ->
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
     fields = @prototype.fields
 
     index = @findFieldIndex(field)
@@ -133,7 +139,7 @@ class MVCoffee.Model
     self = this
     @prototype[methodName] = ->
       modelStore = self.prototype.modelStore
-      foreignKey = options.foreign_key || "#{self.prototype.modelName}_id"
+      foreignKey = options.foreignKey || options.foreign_key || "#{self.prototype.modelName}_id"
       
       # @ now refers to the object "this", not the static class "this"
       result = []
@@ -150,7 +156,7 @@ class MVCoffee.Model
   
   @belongsTo: (name, options = {}) ->
     methodName = options.as || name
-    foreignKey = options.foreign_key || "#{name}_id"
+    foreignKey = options.foreignKey || options.foreign_key || "#{name}_id"
     # Stash this reference, because "this" is about to change
     self = this
     @prototype[methodName] = ->

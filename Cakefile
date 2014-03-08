@@ -80,7 +80,6 @@ compile_specs = (callback) ->
   for file in files
     result = file.replace(/\.coffee$/, ".js")
     sh.run "coffee --compile -o test #{path}/#{file}"
-    sh.run "jasmine-node test/#{result}"
   callback() if callback?
 
 test = (callback) ->
@@ -146,8 +145,14 @@ task 'test', 'Build project and compile the coffee files needed to run the QUnit
   depend build, ->
     depend minify, test
     
-task 'spec', 'Build the jasmine specs written in coffeescript and run them', ->
+task 'spec-build', 'Build the jasmine specs written in coffeescript and run them', ->
   depend build, compile_specs
+  
+task 'spec', 'Run the jasmine specs', ->
+  depend build, ->
+    depend compile_specs, ->
+      sh.run "jasmine-node test"
+
   
 task 'all', 'Build project, minify and compile files needed to run QUnity tests', ->
   depend build, ->

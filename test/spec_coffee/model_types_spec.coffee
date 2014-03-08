@@ -13,3 +13,6 @@ describe "the types macro method adds typing to a new field", ->
     expect(user.fields[0].name).toBe("is_silly")
     expect(user.fields[0].type).toBe("boolean")
 
+  it "should not modify the parent class's prototype", ->
+    expect(MVCoffee.Model.prototype.fields.length).toBe(0)
+

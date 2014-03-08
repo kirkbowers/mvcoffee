@@ -18,3 +18,6 @@ describe "the displays macro method adds typing to a new field", ->
   it "should use the custom display name in error messages", ->
     user = new User({barf: "" })
     expect(user.errors[0]).toMatch(/^Horf/)
+
+  it "should not modify the parent class's prototype", ->
+    expect(MVCoffee.Model.prototype.fields.length).toBe(0)

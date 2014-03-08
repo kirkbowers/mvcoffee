@@ -48,6 +48,14 @@ describe "model macro methods for relationships", ->
     activity = new Activity()
     expect(activity.user instanceof Function).toBeTruthy()
 
+  it "should not define an activities method on the super class", ->
+    model = new MVCoffee.Model
+    expect(model.activities).toBeUndefined()
+
+  it "should not define a user method on the super class", ->
+    model = new MVCoffee.Model
+    expect(model.user).toBeUndefined()
+
   it "should find a model by id", ->
     user = User.find(1)
     expect(user instanceof User).toBeTruthy()
