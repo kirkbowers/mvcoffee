@@ -11,3 +11,9 @@ else
   # created by the above assignment as an alias to the object of the same name on this.
   this.MVCoffee || (this.MVCoffee = {})
   MVCoffee = this.MVCoffee
+  
+# polyfill Array.isArray, just in case
+if !Array.isArray
+  Array.isArray = (arg) ->
+    Object.prototype.toString.call(arg) is '[object Array]'
+

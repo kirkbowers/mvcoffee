@@ -3,7 +3,9 @@ fs     = require 'fs'
 
 appFiles = [
   'main'
+  'controller_manager'
   'controller'
+  'model_store'
   'model'
 ]
 
