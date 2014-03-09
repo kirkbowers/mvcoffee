@@ -14,7 +14,7 @@
 //= require jquery.turbolinks
 //= require jquery_ujs
 //= require turbolinks
-//= require mvcoffee
+//= require mvcoffee.min
 //= require_self
 //= require_directory ./controllers
 //= require manager

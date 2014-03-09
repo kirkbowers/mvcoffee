@@ -1,30 +1,3 @@
-class MVCoffee.ControllerManager
-  controllers: []
-  active: null
-
-  addController: (contr) ->
-    @controllers.push(contr)
-
-  go: ->
-    newActive = null
-    for contr in @controllers
-      if jQuery(contr.selector).length > 0
-        newActive = contr
-    
-    if @active?
-      # We need to start a new controller, so make sure we stop the current one if 
-      # this is one
-      @active.stop()
-      window.onbeforeunload = null
-      
-    if newActive?
-      @active = newActive
-      @active.start()
-      window.onbeforeunload = =>
-        @active.stop()
-    else
-      @active = null
-
 class MVCoffee.Controller
   constructor: (@id) ->
     @selector = "body#" + @id
@@ -49,19 +22,17 @@ class MVCoffee.Controller
         
     if @refresh?
       @startTimer()
-
-      window.onfocus = =>
-        # Related to the comment above, if isActive is true, we're already sitting on
-        # this page the window already has focus, so don't refresh unnecessarily.
-        unless @isActive
-          @isActive = true
-          @refresh()
-          @startTimer()
-        
-      window.onblur = =>
-        @isActive = false
-        @stopTimer()
-        
+       
+  resume: ->
+    if @refresh? and not @isActive
+      @isActive = true
+      @refresh()
+      @startTimer()      
+  
+  pause: ->
+    if @refresh?
+      @isActive = false
+      @stopTimer()
       
   stop: ->
     @isActive = false

@@ -1,9 +1,3 @@
-# polyfill Array.isArray, just in case
-
-if !Array.isArray
-  Array.isArray = (arg) ->
-    Object.prototype.toString.call(arg) is '[object Array]'
-
 
 class MVCoffee.Model
   constructor: (obj)->
@@ -21,6 +15,165 @@ class MVCoffee.Model
   
   errors: []
   valid: true
+
+  #----------------------------------------------------------------------------
+  # Static query method definitions
+  
+  @order: (array, order) ->
+    result = array
+    [prop, desc] = order.split(/\s+/)
+    value = 1
+    if desc? is "desc"
+      value = -1
+    result.sort (a, b) ->
+      if a[prop] > b[prop]
+        value
+      else
+        -value
+    result
+  
+  @all: (options = {})->
+    result = @prototype.modelStore.all(@prototype.modelName)
+    if options.order
+      result = @sort(result, options.order)
+    result
+    
+  @find: (id) ->
+    @prototype.modelStore.find(@prototype.modelName, id)
+
+  #----------------------------------------------------------------------------
+  # Macro method definitions
+
+  # This has no real use as a macro method, but it is reusable by other macro methods
+  @findFieldIndex: (field) ->
+    # This is an ugly way to find an arbitrary match in an array
+    # ES6 has a findIndex method that takes a function as a parameter, but I have to
+    # expect most browsers are running ES5
+    fields = @prototype.fields
+    index = -1
+    for i in [0...fields.length]
+      index = i if fields[i].name is field
+    index  
+
+  # This replaces the v0.1 way of declaring validations on a model.  Actually, it 
+  # doesn't totally replace it, it depends on that old way under the hood, but it
+  # provides a much cleaner syntax.
+  @validates: (field, test) ->
+    # This is the trick to doing a "macro method" in javascript
+    # We have to operate on the prototype of this.
+    # We also have to guard against working on the parent class prototype inadvertantly.
+    # So we need to check if we have our own property fields first and create it if we
+    # don't
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
+    fields = @prototype.fields
+
+    # If there is already an object on the fields property that has this field name,
+    # we want to attach this validation to that field rather than add to the fields
+    # array.  See if we find it first.
+    index = @findFieldIndex(field)
+      
+    if index < 0
+      # We didn't find a match for this field name, so we can just "safely" push a new
+      # object onto the fields array.  I say "safely" because there is no guarentee
+      # that a client didn't do something stupid like make fields a non-array on the
+      # model's prototype, but we don't mind an error being thrown if that happened.
+      #
+      # I put the test in an array because it makes adding more validations later
+      # easier.  The validates as a single object notation is just a convenience for
+      # v0.1 style declarations.
+      fields.push
+        name: field,
+        validates: [test]
+    else
+      field = fields[index]
+      if field.validates?
+        # This field may exist already with no validations, most likely for a type
+        # convertion if it does.  But if we do have a validates property, we want to 
+        # add to it instead of just setting it.
+        # It may be a single object, for the v0.1 convenience style mentioned above, 
+        # or it may already be an array.
+        if Array.isArray field.validates
+          field.validates.push test
+        else
+          field.validates = [field.validates, test]
+      else
+        field.validates = [test]
+
+  # This is types as a verb, not as in presses keys on a typewriter, but as in sets
+  # the type of.  The typical use would be:
+  #    it.types "some_field", "boolean"
+  @types: (field, type) ->
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
+    fields = @prototype.fields
+
+    index = @findFieldIndex(field)
+      
+    if index < 0
+      fields.push
+        name: field,
+        type: type
+    else
+      fields[index].type = type    
+      
+  @displays: (field, display) ->
+    @prototype.fields = [] unless @prototype.hasOwnProperty("fields")
+    fields = @prototype.fields
+
+    index = @findFieldIndex(field)
+      
+    if index < 0
+      fields.push
+        name: field,
+        display: display
+    else
+      fields[index].display = display   
+  
+
+  # I really debated on the name of this.  I think camel case is the norm in js land
+  # but snake case is the norm in ruby for method names.  This method is modeled after
+  # the has_many method in rails.  The best I could think to do was provide both, one
+  # as sort of an alias to the other.
+  @hasMany: (name, options = {}) ->
+    methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
+    # Stash this reference, because "this" is about to change
+    self = this
+    @prototype[methodName] = ->
+      modelStore = self.prototype.modelStore
+      foreignKey = options.foreignKey || options.foreign_key || "#{self.prototype.modelName}_id"
+      
+      # @ now refers to the object "this", not the static class "this"
+      result = []
+      if modelStore?
+        constraints = {}
+        constraints[foreignKey] = @id
+        result = modelStore.where(name, constraints)
+        
+      if options.order
+        result = self.order(result, options.order)
+      result
+    
+  @has_many: @hasMany
+  
+  @belongsTo: (name, options = {}) ->
+    methodName = options.as || name
+    foreignKey = options.foreignKey || options.foreign_key || "#{name}_id"
+    # Stash this reference, because "this" is about to change
+    self = this
+    @prototype[methodName] = ->
+      modelStore = self.prototype.modelStore
+      # @ now refers to the object "this", not the static class "this"
+      result = null
+      if modelStore?
+        result = modelStore.find(name, @[foreignKey])
+        
+      # TODO!!!
+      # Handle other options, maybe there are none
+      result
+    
+  @belongs_to: @belongsTo
+
+  #----------------------------------------------------------------------------
+  # Regular method definitions
   
   isValid: ->
     @valid

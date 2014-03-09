@@ -3,16 +3,16 @@
 The functionality of MVCoffee ranges from easy-to-automatically-test 
 utilities to hard-to-test capabilities that depend entirely on user interaction.
 In order to test the full range, the tests are broken into three parts: straight unit
-tests, unit tests that depend on the contents of an html form, and "gray box" tests
-that depend on user interaction.  Model validations can be tested traditionally,
+tests, unit tests that depend on the contents of an html form, and "pre-rolled blackbox"
+tests that depend on user interaction.  Model validations can be tested traditionally,
 model population (may) depend on user input, and controller activation and refreshing
 depends entirely on live user actions.
 
-Before you run any of the tests described below, the library must be built, and any
-supporting test files in CoffeeScript must be compiled to JavaScript.  In order to 
-carry out both steps, from the project root directory run:
+Before you run any of the non-interactive tests described below, the library must be 
+built, and any supporting test files in CoffeeScript must be compiled to JavaScript.  In 
+order to carry out both steps, from the project root directory run:
 
-    cake test
+    cake test-build
 
 In addition to the tests described above, there is a simple little sanity check in the
 test directory to see if the library will load as a node module with proper namespacing.
@@ -26,11 +26,17 @@ or on a unix system, simply:
     ./node_test.js
     
 
-## Model validation tests
+## Model validation and association tests
 
-Model validation tests are the simplest because they operate on values already in 
-memory with no concern for the source.  They are straight QUnit tests that are run 
-by visiting the page `test/validations.html` in any web browser.  
+Model validation and association tests are the simplest because they operate on values
+already in memory with no concern for the source.  They are straight jasmine tests that
+are run by calling:
+
+    cake spec
+    
+from the project root.
+
+Additionally, there are some legacy QUnit tests that can be run by visiting the page `test/validations.html` in any web browser.  
 
 ## Model population tests
 
@@ -72,6 +78,11 @@ start any given test, you should see a list item under that test's heading that 
 controller has started.  You may see other list items accumulate as time passes and/or
 you perform other actions.  You should never see messages appear under any of the three
 headings for the controllers other than the currently active one.
+
+Additionally, `controller_test` exercises the ability to run multiple controllers with
+different refresh policies.  At the top of all pages is the local time.  It should
+refresh once a second on all pages if the window has the focus, and pause when a 
+different window is active.
 
 ### Default Timer
 
