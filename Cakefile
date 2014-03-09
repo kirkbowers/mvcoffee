@@ -124,6 +124,8 @@ task 'clean', 'Remove all product files for a clean slate', ->
   # Delete only the files that end in .js, NOT the .coffee files
   console.log("Removing compiled test models")
   rmdirContents "test/js/coffee/", /\.js$/
+  # And the compiled jasmine specs too
+  rmdirContents "test", /_spec\.js$/
 
   # Delete lib files from controller test
   console.log("Removing lib files from controller_test")
