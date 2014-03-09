@@ -6,7 +6,7 @@ class MVCoffee.ControllerManager
     # console.log("controller manager constructor, #{contrs}")
 
     for id, contr of contrs
-      @addController(new contr, id)
+      @addController(new contr(id, this), id)
 
 
   addController: (contr, id) ->
@@ -17,17 +17,22 @@ class MVCoffee.ControllerManager
       # This is here for backwards compatibility with v0.1
       @controllers[contr.selector] = contr
 
+  broadcast: (message, args...) ->
+    for controller in @active
+      if controller[message]? and typeof controller[message] is 'function'
+        controller[message].apply(controller, args)
+
   go: ->
     newActive = []
     for id, contr of @controllers
       if jQuery("##{id}").length > 0
         newActive.push contr
     
-    if @active?
-      # We need to start a new controller, so make sure we stop the current one if 
-      # this is one
-      for contr in @active
-        contr.stop()
+    if @active.length
+      # We need to start a new controller, so make sure we stop the current ones if 
+      # there are any
+      @broadcast "stop"
+
       window.onbeforeunload = null
       window.onfocus = null
       window.onblur = null
@@ -35,20 +40,12 @@ class MVCoffee.ControllerManager
     if newActive.length
       # console.log("Number of active controllers is " + newActive.length)
       @active = newActive
-      for contr in @active
-        contr.start()
-      # Turns out we don't need to do this onbeforeunload.
-      # Everything will just stop anyway as javascript is purged from memory
-      #       window.onbeforeunload = =>
-      #         for contr in @active
-      #           contr.stop()
+      @broadcast "start"
+      
       window.onfocus = =>
-        for contr in @active
-          contr.resume()
+        @broadcast "resume"
       window.onblur = =>
-        for contr in @active
-          contr.pause()
-          
+        @broadcast "pause"          
     else
       @active = []
 
