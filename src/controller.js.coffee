@@ -1,6 +1,6 @@
 class MVCoffee.Controller
-  constructor: (@id) ->
-    @selector = "body#" + @id
+  constructor: (@id, @manager) ->
+    @selector = "#" + id
     @timerId = null
     @isActive = false
   
@@ -40,8 +40,6 @@ class MVCoffee.Controller
     
     if @refresh?
       @stopTimer()
-      window.onfocus = null
-      window.onblur = null
   
   # One minute, 60 millis
   refreshInterval: 60000
@@ -61,7 +59,11 @@ class MVCoffee.Controller
     if @timerId?
       @stopTimer()
     if @refreshInterval? and @refreshInterval > 0
-      @timerId = setInterval(@refresh, @refreshInterval)
+      self = this
+      @timerId = setInterval(
+        -> self.refresh.call(self) 
+        @refreshInterval
+      )
     
   stopTimer: ->
     if @timerId?
