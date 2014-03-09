@@ -705,7 +705,7 @@ provide a callback that performs the refresh whenever it is triggered.
 
 To provide a refresh callback, just override the `refresh` method in your controller:
 
-      refresh: =>
+      refresh: ->
         # Get all the alternates for this item over Ajax using a RESTful interface
         $.get('/items/' + @item.id + '/alternates',
           (data) =>
@@ -775,6 +775,18 @@ go the full SPA approach.  **NOTE:** This only works if you have the
 gem in your project.  Otherwise turbolinks will cause jQuery not to fire the document
 ready event and the controller manager will not be able to detect page changes.  Make
 sure you use this gem!
+
+<a name="controller-broadcast"></a>
+### Broadcasting messages
+
+What if an event in one controller needs to ripple through all other active controllers?
+You can handle this by asking the controller manager to broadcasting a message to all
+active controllers.  When controllers are registered with the controller manager, they
+receive a reference back to the manager as the (aptly named) `manager` propert.  Inside
+your controller, you can call `@manager.broadcast` and pass it the String name of the 
+method to call (with optional arguments) on every controller currently active:
+
+        @manager.broadcast "something_happened", args...
 
 <a name="contributing"></a>
 # Contributing

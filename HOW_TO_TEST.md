@@ -82,7 +82,9 @@ headings for the controllers other than the currently active one.
 Additionally, `controller_test` exercises the ability to run multiple controllers with
 different refresh policies.  At the top of all pages is the local time.  It should
 refresh once a second on all pages if the window has the focus, and pause when a 
-different window is active.
+different window is active.  Also, the `broadcast` capability is exercised.  Once a
+minute while active, the active controller should display a "minute changed" event
+when the minutes of the current time change.
 
 ### Default Timer
 
