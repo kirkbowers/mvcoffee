@@ -23,7 +23,7 @@ class MVCoffee.Model
     result = array
     [prop, desc] = order.split(/\s+/)
     value = 1
-    if desc? is "desc"
+    if desc? and desc is "desc"
       value = -1
     result.sort (a, b) ->
       if a[prop] > b[prop]
