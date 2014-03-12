@@ -2,6 +2,8 @@ class MVCoffee.ControllerManager
   constructor: (contrs = {}) ->
     @controllers = {}
     @active = []
+    @_flash = {}
+    @_oldFlash = {}
 
     # console.log("controller manager constructor, #{contrs}")
 
@@ -21,8 +23,22 @@ class MVCoffee.ControllerManager
     for controller in @active
       if controller[message]? and typeof controller[message] is 'function'
         controller[message].apply(controller, args)
+        
+  setFlash: (opts) ->
+    for key, opt of opts
+      @_flash[key] = opt
+      
+  getFlash: (key) ->
+    @_flash[key] ? @_oldFlash[key]
+
+  # run: ->
+  #   document.addEventListener("page:load", @go)
 
   go: ->
+    # Recycle the flash
+    @_oldFlash = @_flash
+    @_flash = {}
+  
     newActive = []
     for id, contr of @controllers
       if jQuery("##{id}").length > 0

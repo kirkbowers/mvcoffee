@@ -17,6 +17,8 @@ class MVCoffee.Controller
     # First thing we want to do is get the authenticity token that rails supplies,
     # just in case this is rails on the backend
     @authenticity_token = jQuery("meta[name='csrf-token']").attr("content");
+            
+        
     
     @onStart()
         
@@ -40,6 +42,62 @@ class MVCoffee.Controller
     
     if @refresh?
       @stopTimer()
+      
+  turbolinkForms: (validations = {}) ->
+    if Turbolinks?
+      self = this
+      $("form").each (index, element) =>
+        if validations[element.id]?
+          $(element).submit ->
+            model = validations[element.id]
+            model.populate()
+            method = "#{element.id}_errors"
+            if self[method]?
+              self[method](model.errors)
+            else
+              console.log("!!! method not implemented !!!")
+              
+            if model.isValid()
+              self.turbolinksPost element
+            false
+        else
+          $element = $(element)
+          if element.method is "get" or element.method is "GET"
+            $(element).submit ->
+              Turbolinks.visit element.action
+              false
+          else
+            $(element).submit =>
+              self.turbolinksPost(element)
+                    
+  turbolinksPost: (element) ->
+    # console.log "Submiting #{element.id} over turbolinks"
+    $.post(element.action,
+      $(element).serialize(),
+      (data) =>
+        # console.log "Form submit returned: " + JSON.stringify(data)
+        if data.errors?
+          method = "#{element.id}_errors"
+          # console.log "Calling method on controller: " + method
+          if @[method]?
+            @[method](data.errors)
+          #else
+          # TODO!!!
+          # Do something to alert the user of the error
+        else
+          if data.redirect?
+            @manager.flash = data.flash
+            Turbolinks.visit(data.redirect)
+          else
+            method = element.id
+            if @[method]?
+              @[method](data)
+            # else
+            # TODO!!! Do something?   
+      ,
+      'json')
+    false
+  
   
   # One minute, 60 millis
   refreshInterval: 60000
