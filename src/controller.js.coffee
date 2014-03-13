@@ -43,30 +43,56 @@ class MVCoffee.Controller
     if @refresh?
       @stopTimer()
       
-  turbolinkForms: (validations = {}) ->
+  turbolinkForms: (customizations = {}) ->
+    # If this is a Rails 4 project with turbolinks enabled
     if Turbolinks?
       self = this
+      # We want to add our own "unobtrusive" javascript on every form on the page
       $("form").each (index, element) =>
-        if validations[element.id]?
+        # The allowed customizations are "confirm" and "model"
+        if customizations[element.id]?
+          customization = customizations[element.id]
           $(element).submit ->
-            model = validations[element.id]
-            model.populate()
-            method = "#{element.id}_errors"
-            if self[method]?
-              self[method](model.errors)
-            else
-              console.log("!!! method not implemented !!!")
+            doPost = true
+            # The "confirm" customization pops up a confirm dialog
+            confirm = customization.confirm
+            if confirm?
+              doPost = window.confirm(confirm)
+            
+            # The "model" customization performs validation with the supplied
+            # model instance.  NOTE:  it must be an instance, not a model 
+            # constructor function.
+            # If validation fails, the method that matches the form's id with
+            # _errors appended will be called with the errors array.
+            model = customization.model
+            if doPost and model?
+              model.populate()
+              method = "#{element.id}_errors"
+              if self[method]?
+                self[method](model.errors)
+              else
+                console.log("!!! method #{method} not implemented !!!")
               
-            if model.isValid()
+              doPost = model.isValid()
+            
+              
+            console.log ("do post = " + doPost)
+            if doPost
               self.turbolinksPost element
+              
+            # Always return false to supress a true post 
             false
         else
+          # No customizations being done
           $element = $(element)
+          
+          # Just follow the link if it is a "get"
           if element.method is "get" or element.method is "GET"
             $(element).submit ->
               Turbolinks.visit element.action
               false
           else
+            # Or just submit the form if it is a "post"
             $(element).submit =>
               self.turbolinksPost(element)
                     
@@ -85,8 +111,10 @@ class MVCoffee.Controller
           # TODO!!!
           # Do something to alert the user of the error
         else
+          @manager.loadData(data)
+          # console.log("In controller post: " + JSON.stringify(data))
           if data.redirect?
-            @manager.flash = data.flash
+            # @manager.flash = data.flash
             Turbolinks.visit(data.redirect)
           else
             method = element.id

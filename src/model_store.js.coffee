@@ -33,23 +33,46 @@ class MVCoffee.ModelStore
   # If the second parameter is supplied, the new models are merged into the supplied
   # object.
   load: (data, result = {}) ->
-    for objName of data
-      if @modelDefs[objName]?
-        # This is a model we know about
-        obj = data[objName]
+    for key, value of data
+      if key is "models"
+        result.models ||= {}
+        for objName, obj of value
+          if @modelDefs[objName]?
+            # This is a model we know about
         
-        # If this is an array, we need to load each in turn
-        if Array.isArray obj
-          result[objName] = []
-          for modelObj in obj
-            model = new @modelDefs[objName](modelObj)
-            result[objName].push model
-            @store[objName][model.id] = model
-        else
-          result[objName] = new @modelDefs[objName](obj)
+            # If this is an array, we need to load each in turn
+            if Array.isArray obj
+              result.models[objName] = []
+              for modelObj in obj
+                model = new @modelDefs[objName](modelObj)
+                result.models[objName].push model
+                @store[objName][model.id] = model
+            else
+              model = new @modelDefs[objName](obj)
+              @store[objName][obj.id] = model
+              result.models[objName] = model
+          else
+            result.models[objName] = obj
+      else if key is "deletes"
+        result.deletes ||= {}
+        for objName, obj of value
+          if @modelDefs[objName]?
+            # This is a model we know about
+        
+            # If this is an array, we need to load each in turn
+            if Array.isArray obj
+              for modelId in obj
+                delete @store[objName][modelId]
+                delete result.models?[objName]?[modelId]
+            else
+              delete @store[objName][obj]
+              delete result.models?[objName]?[obj]
+          else
+            console.log("!!! Warning, trying to delete from unknown model #{objName} !!!")
+            # result.models[objName] = obj
       else
         # This isn't a model we know about, pass through
-        result[objName] = data[objName]
+        result[key] = value
         
     result
       
