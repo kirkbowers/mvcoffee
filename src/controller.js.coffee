@@ -48,7 +48,7 @@ class MVCoffee.Controller
     if Turbolinks?
       self = this
       # We want to add our own "unobtrusive" javascript on every form on the page
-      $("form").each (index, element) =>
+      jQuery("form").each (index, element) =>
         # The allowed customizations are "confirm" and "model"
         if customizations[element.id]?
           customization = customizations[element.id]
@@ -95,37 +95,60 @@ class MVCoffee.Controller
             # Or just submit the form if it is a "post"
             $(element).submit =>
               self.turbolinksPost(element)
+      
+      # Do the same thing for a links that have a data-method of "delete"
+      jQuery("a[data-method='delete']").each (index, element) =>
+        console.log("Found a delete link! url=" + element.href) 
+        jQuery(element).click( =>
+          doPost = true
+          # The "confirm" customization pops up a confirm dialog
+          confirm = jQuery(element).data("confirm")
+          if confirm?
+            doPost = window.confirm(confirm)
+
+          if doPost
+            jQuery.ajax(
+              url: element.href,
+              type: 'DELETE',
+              success: (data) =>
+                @processServerData(data)
+              dataType: "json"
+            )
+          false
+        )
                     
   turbolinksPost: (element) ->
     # console.log "Submiting #{element.id} over turbolinks"
-    $.post(element.action,
+    jQuery.post(element.action,
       $(element).serialize(),
       (data) =>
-        # console.log "Form submit returned: " + JSON.stringify(data)
-        if data.errors?
-          method = "#{element.id}_errors"
-          # console.log "Calling method on controller: " + method
-          if @[method]?
-            @[method](data.errors)
-          #else
-          # TODO!!!
-          # Do something to alert the user of the error
-        else
-          @manager.loadData(data)
-          # console.log("In controller post: " + JSON.stringify(data))
-          if data.redirect?
-            # @manager.flash = data.flash
-            Turbolinks.visit(data.redirect)
-          else
-            method = element.id
-            if @[method]?
-              @[method](data)
-            # else
-            # TODO!!! Do something?   
+        @processServerData(data)
       ,
       'json')
     false
   
+  processServerData: (data) ->
+    # console.log "Form submit returned: " + JSON.stringify(data)
+    if data.errors?
+      method = "#{element.id}_errors"
+      # console.log "Calling method on controller: " + method
+      if @[method]?
+        @[method](data.errors)
+      #else
+      # TODO!!!
+      # Do something to alert the user of the error
+    else
+      @manager.loadData(data)
+      # console.log("In controller post: " + JSON.stringify(data))
+      if data.redirect?
+        # @manager.flash = data.flash
+        Turbolinks.visit(data.redirect)
+      else
+        method = element.id
+        if @[method]?
+          @[method](data)
+        # else
+        # TODO!!! Do something?   
   
   # One minute, 60 millis
   refreshInterval: 60000
