@@ -16,7 +16,9 @@ class MVCoffee.Controller
     
     # First thing we want to do is get the authenticity token that rails supplies,
     # just in case this is rails on the backend
-    @authenticity_token = jQuery("meta[name='csrf-token']").attr("content");
+    token = jQuery("meta[name='csrf-token']")
+    if token?.length
+      @authenticity_token = token.attr("content");
             
         
     
@@ -95,6 +97,7 @@ class MVCoffee.Controller
             # Or just submit the form if it is a "post"
             $(element).submit =>
               self.turbolinksPost(element)
+              false
       
       # Do the same thing for a links that have a data-method of "delete"
       jQuery("a[data-method='delete']").each (index, element) =>
@@ -111,7 +114,7 @@ class MVCoffee.Controller
               url: element.href,
               type: 'DELETE',
               success: (data) =>
-                @processServerData(data)
+                @processServerData(data, element)
               dataType: "json"
             )
           false
@@ -122,12 +125,12 @@ class MVCoffee.Controller
     jQuery.post(element.action,
       $(element).serialize(),
       (data) =>
-        @processServerData(data)
+        @processServerData(data, element)
       ,
       'json')
     false
   
-  processServerData: (data) ->
+  processServerData: (data, element) ->
     # console.log "Form submit returned: " + JSON.stringify(data)
     if data.errors?
       method = "#{element.id}_errors"
