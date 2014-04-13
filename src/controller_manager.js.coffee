@@ -9,7 +9,7 @@ class MVCoffee.ControllerManager
     # This is the default html id that is used to pull the json out of a page
     @dataId = "server_json"
     # This should be overridden in your master file to point to your project's
-    # actually model store.  This is just here to keep things from bombing
+    # actual model store.  This is just here to keep things from bombing
     # completely if you don't set one.
     @modelStore = new MVCoffee.ModelStore
 
@@ -39,8 +39,6 @@ class MVCoffee.ControllerManager
   getFlash: (key) ->
     @_flash[key] ? @_oldFlash[key]
 
-  # run: ->
-  #   document.addEventListener("page:load", @go)
 
   loadData: (data) ->
     # Most properties on the data object we want to pass through from one page to
@@ -60,6 +58,7 @@ class MVCoffee.ControllerManager
   
     # Pull the json from the page if there is some embedded
     json = $("##{@dataId}").html()
+    # console.log("Client json = " + json)
     parsed = {}
     if json
       parsed = $.parseJSON(json)
@@ -70,6 +69,7 @@ class MVCoffee.ControllerManager
     newActive = []
     for id, contr of @controllers
       if jQuery("##{id}").length > 0
+        # console.log("Found id for controller " + id)
         newActive.push contr
     
     if @active.length

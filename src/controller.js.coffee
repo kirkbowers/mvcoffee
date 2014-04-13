@@ -45,6 +45,11 @@ class MVCoffee.Controller
     if @refresh?
       @stopTimer()
       
+  # This method must be explicitly called inside of onStart in subclasses that want
+  # to handle form submission through turbolinks.  By default, form submission causes
+  # a full refresh of the page, even with turbolinks enabled.  That may not be what we
+  # want if we have data cached client side.  Calling this method causes form submission
+  # to automagically happen over ajax, just as if turbolinks were handling it.
   turbolinkForms: (customizations = {}) ->
     # If this is a Rails 4 project with turbolinks enabled
     if Turbolinks?
@@ -77,8 +82,6 @@ class MVCoffee.Controller
               
               doPost = model.isValid()
             
-              
-            console.log ("do post = " + doPost)
             if doPost
               self.turbolinksPost element
               
@@ -101,7 +104,7 @@ class MVCoffee.Controller
       
       # Do the same thing for a links that have a data-method of "delete"
       jQuery("a[data-method='delete']").each (index, element) =>
-        console.log("Found a delete link! url=" + element.href) 
+        # console.log("Found a delete link! url=" + element.href) 
         jQuery(element).click( =>
           doPost = true
           # The "confirm" customization pops up a confirm dialog

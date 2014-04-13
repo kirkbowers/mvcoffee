@@ -1,4 +1,6 @@
 class TestController < ApplicationController
+  layout 'test'
+
   def default_timer
   end
 

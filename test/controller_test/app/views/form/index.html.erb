@@ -1,0 +1,40 @@
+<% content_for :body_id do %>
+  id="form_page"
+<% end %>
+
+<p id="page-loads">
+</p>
+
+<p id="flash">
+</p>
+
+<p>
+  <%= link_to "Plain ol' GET link", form_other_path %>
+</p>
+
+  <%= button_to "GET button to", form_other_path, method: :get %>
+<br>
+
+  <%= button_to "POST button to with redirect", form_post_button_path, method: :post %>
+<br>
+
+  <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button'} %>
+<br>
+
+<p>
+  <%= link_to "DELETE link", form_delete_path, method: :delete %>
+</p>
+
+<ul id="thing-errors">
+</ul>
+
+<%= form_tag form_post_form_path, method: :post, id: "thing_form" do %>
+
+<p>
+  <%= label_tag :name, 'Name' %>
+  <%= text_field_tag :name %>
+</p>
+
+<%= submit_tag "Go" %>
+
+<% end %>
