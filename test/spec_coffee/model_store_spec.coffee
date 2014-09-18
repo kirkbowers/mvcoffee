@@ -66,33 +66,37 @@ describe "ModelStore initialization and loading", ->
 
   it "converts recognized property as an object to a model", ->
     data =
-      mock_model:
-        id: 1
-        name: "The First"
+      models:
+        mock_model:
+          id: 1
+          name: "The First"
     result = store.load data
-    expect(result.mock_model instanceof MockModel).toBe(true)
-    expect(result.mock_model.id).toBe(1)
-    expect(result.mock_model.name).toBe("The First")
+    mock_model = result.models.mock_model
+    expect(mock_model instanceof MockModel).toBe(true)
+    expect(mock_model.id).toBe(1)
+    expect(mock_model.name).toBe("The First")
       
   it "converts recognized property as an array to an array of models", ->
     data =
-      mock_model: [
-        id: 1
-        name: "The First"
-      ,
-        id: 2
-        name: "What's on second"
-      ]
+      models:
+        mock_model: [
+          id: 1
+          name: "The First"
+        ,
+          id: 2
+          name: "What's on second"
+        ]
       
     result = store.load data
-    expect(result.mock_model instanceof Array).toBe(true)
-    expect(result.mock_model.length).toBe(2)
-    expect(result.mock_model[0] instanceof MockModel).toBe(true)
-    expect(result.mock_model[1] instanceof MockModel).toBe(true)
-    expect(result.mock_model[0].id).toBe(1)
-    expect(result.mock_model[0].name).toBe("The First")
-    expect(result.mock_model[1].id).toBe(2)
-    expect(result.mock_model[1].name).toBe("What's on second")
+    mock_model = result.models.mock_model
+    expect(mock_model instanceof Array).toBe(true)
+    expect(mock_model.length).toBe(2)
+    expect(mock_model[0] instanceof MockModel).toBe(true)
+    expect(mock_model[1] instanceof MockModel).toBe(true)
+    expect(mock_model[0].id).toBe(1)
+    expect(mock_model[0].name).toBe("The First")
+    expect(mock_model[1].id).toBe(2)
+    expect(mock_model[1].name).toBe("What's on second")
     
 describe "ModelStore loading records and querying", ->
   store = null
@@ -103,22 +107,23 @@ describe "ModelStore loading records and querying", ->
       mock_model: MockModel
       
     data =
-      mock_model: [
-        id: 1
-        name: "One"
-        foreign_id: 11
-      ,
-        id: 2
-        name: "Two"
-        foreign_id: 11
-      ,
-        id: 3
-        name: "Three"
-        foreign_id: 42
-      ]
+      models:
+        mock_model: [
+          id: 1
+          name: "One"
+          foreign_id: 11
+        ,
+          id: 2
+          name: "Two"
+          foreign_id: 11
+        ,
+          id: 3
+          name: "Three"
+          foreign_id: 42
+        ]
 
     result = store.load data
-    mocks = result.mock_model
+    mocks = result.models.mock_model
       
   it "finds by id", ->
     result = store.find("mock_model", 2)
@@ -183,4 +188,19 @@ describe "ModelStore loading records and querying", ->
     expect(result[1].id).toBe(2)
     expect(result[2] instanceof MockModel).toBeTruthy()
     expect(result[2].id).toBe(3)
+    
+  it "deletes a record", ->
+    store.load(
+      deletes:
+        mock_model: [2]
+    )
+    
+    result = store.all("mock_model")
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(2)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(3)
+    
     

@@ -60,9 +60,9 @@ that may prove is "selling oneself a rusty bridge", passing the tests but not be
 representative of actual browser behavior in the wild.  Much as we all prefer automated 
 tests, some times you have to suck it up and black box test things (that is, fire it up
 and run through it from the end customer's perspective).  In the case of MVCoffee's
-controllers, we can do what I call "gray box testing", using reusable, pre-programmed
-test cases that set up initial conditions that then must be manually interacted with
-and visually verified.
+controllers, we can do what I call "pre-rolled blackbox testing", using reusable, 
+pre-programmed test cases that set up initial conditions that then must be manually 
+interacted with and visually verified.
 
 In order to test the controller behavior of MVCoffee, there is a very simple Rails 
 project included in the `test` directory called `controller_test`.  Change to that
@@ -128,5 +128,17 @@ while you are away, and no refresh should occur when you return to that window. 
 the window and returning should not start a timer, so no refresh messages should appear
 no matter how long you sit there.
 
+## Turbolinks Tests
+
+In addition to the tests described in the previous section that exercise the "refresh"
+capability of MVCoffee controllers, there are a set of tests that exercise the 
+enhancements to Rails Turbolinks provided in MVCoffee.  In order to test these 
+enhancements, start the rails server as described above and point your browser to
+`localhost:3000/form/index`.  Click on all the different links and buttons and verify 
+that the "Number of page loads" continues to increment.  This number will only reset to
+one when a full non-ajax/non-turbolinks page refresh occurs, as it is set once at the 
+beginning of a full page load.  As long as the number keeps increasing, that means the
+value is cached, the javascript state is being maintained, and all page navigation and 
+redirecting is happening through Turbolinks.
 
 

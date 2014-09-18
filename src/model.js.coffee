@@ -19,17 +19,29 @@ class MVCoffee.Model
   #----------------------------------------------------------------------------
   # Static query method definitions
   
-  @order: (array, order) ->
+  @order: (array, order, opts = {}) ->
     result = array
     [prop, desc] = order.split(/\s+/)
     value = 1
-    if desc? is "desc"
+    if desc? and desc is "desc"
       value = -1
+    ignoreCase = false
+    if opts.ignoreCase
+      ignoreCase = true
     result.sort (a, b) ->
-      if a[prop] > b[prop]
+      a = a[prop]
+      b = b[prop]
+      if ignoreCase
+        if a.toLowerCase
+          a = a.toLowerCase()
+        if b.toLowerCase
+          b = b.toLowerCase()
+      if a > b
         value
-      else
+      else if a < b
         -value
+      else
+        0
     result
   
   @all: (options = {})->

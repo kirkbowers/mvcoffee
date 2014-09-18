@@ -1,4 +1,10 @@
 ControllerTest::Application.routes.draw do
+  get "form/index"
+  get "form/other"
+  post "form/post_button"
+  post "form/post_form"
+  delete "form/delete"
+  
   root to: "test#default_timer"
 
   get "test/default_timer"

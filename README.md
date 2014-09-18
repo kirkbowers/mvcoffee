@@ -3,39 +3,27 @@
 MVC: Model, View,... Coffee!
 
 MVCoffee is (yet another) lightweight client-side MVC implementation for web
-applications.  As the name implies, it is written in CoffeeScript.  It is designed to
-support a specific approach to web development:
+applications.  As the name implies, it is written in CoffeeScript.  
 
-* It facilitates a hybrid between the Single Page Application (SPA) approach and 
-old-school html served by the server, allowing for bookmarkable URL-driven navigation
-through your site with enhanced client-side interactivity and Ajax-driven performance
-improvements.  It is tailored to provide this especially well when used with 
-[Ruby on Rails](http://rubyonrails.org) and the 
-[jQuery Turbolinks](https://github.com/kossnocorp/jquery.turbolinks) gem.
-* It allows a "progressive enhancement" approach in the off chance users have 
-JavaScript disabled.  It also works quite well, again with rails and turbolinks, 
-caching data and doing most of the rendering client-side if you require that JavaScript
-be enabled.
-* It's expected that users may have the site running on multiple browsers (Safari, Chrome, 
-Firefox, ...), or more likely on multiple devices (laptop, iPad, ...).  Persisting data
-on the client therefore runs the risk of becoming stale and inconsistent.  The server
-must be the master source for the data, and it should be easy to refresh potentially stale
-data, both periodically and when a browser window regains focus.
-MVCoffee handles knowing when to trigger a refresh and provides a life cycle model
-(start, pause, resume, stop) for controllers, you just have to supply the callbacks.
-* If the server is the master source of the data, it is ultimately responsible for
-validation.  However, client-side validation improves performance and user experience,
-so is beneficial.  Unfortunately, it violates DRY (don't repeat yourself).  It's 
-duplicated effort to write the same validations on both client and server, and those 
-can easily become out of sync.  MVCoffee tries to reduce the impact of this by providing
-a model validation API that very closely mimics Rails' ActiveRecord validations.  In most 
-cases it's a straight translation from Rails `validates` macro methods to CoffeeScript
-macro methods with a very similar syntax.
+Do we really need another MVC framework for the browser?  Maybe not, but this one does have a very specific purpose.  It is designed to integrate tightly with [Rails 4](http://rubyonrails.org) and take full advantage of turbolinks, particularly when using the [jQuery Turbolinks](https://github.com/kossnocorp/jquery.turbolinks) gem.  Here are some of MVCoffee's benefits:
+
+* **Rails-like Models for client-side caching and validating**  It's quite beneficial to 
+represent the data of an application on the client.  Round trips can be avoided by performing validation on the client and by caching information that hasn't changed.  Unfortunately, creating a copy of the model layer violates DRY (don't repeat yourself).  MVCoffee eases the pain of this duplication of effort by mimicking Rails style model declarations as closely as possible in CoffeeScript.  Model associations and validations are declared in MVCoffee using the familiar macro methods `has_many`, `belongs_to` and `validates`.  Yes, macro methods, or at least a close approximation, in CoffeeScript!
+* **Filled in holes in turbolinks**  Turbolinks makes it possible to have the benefits of client data caching previously only possible in a Single Page Application (SPA) while allowing the convenience to end-users of URL based navigation.   That is, most of the time, so long as the user clicked on a link on one of your pages.  It breaks (your cache gets wiped out) when a full page load occurs.  Out of the box, full page loads occur when a form is submitted, a button is clicked (because it is a form under the hood), or a generic redirect is issued.  MVCoffee automagically intercepts form submissions and performs them over ajax for you and issues redirects on the client side without clobbering the cache.  You're saved the effort and coding of performing validations and invoking ajax manually upon form submissions.
+* **Automatic refresh of potentially stale data**  These days, your application can be running in several browser windows simultaneously, or even multiple devices (laptop, tablet, phone, etc.) at one time.  If the user changes the data in one window, then returns to another window, that second window is operating with stale data.  MVCoffee automates doing the right thing in this situation.  All you have to do is provide the callbacks for the refresh life cycle (start, pause, resume, stop) and what the refresh policy should be (when the window regains focus, on a timer, or both), and MVCoffee takes care of firing your policy for you.  This can also be used to update UI elements (like a timer) that may have frozen when the user was viewing a different window.
 
 <a name="whats-new"></a>
-# What's new in 0.2
+# What's new in 0.3
 
-Version 0.2 introduces many improvements over 0.1.
+Version 0.3 introduces many improvements over 0.2.
+
+* Added the `turbolinksForms` method to the `Controller` class.  This method turns on the automagic handling of form submission by MVCoffee, providing form validation, model population, form submission through ajax and redirection through turbolinks.  This saves you a lot of code manually handling ajax and stops full page loads from happening (thus preserving the data cache).
+* Complete refactor of the format of json expected from the server.  This refactor allows a fair amount of new functionality like deleting models from the cache and providing redirects on the client-side (instead of performing a full page redirect and blowing away the cache).
+* Controller Manager now can perform automatic loading of the json from the server, handling data store loading, handling the flash data and performing redirects.
+
+NOTE:  These new features are in the process of being documented.  I've been holding off publishing this update for months as I've been struggling to document it all.  I decided to go ahead and publish and update the docs as I can.  Furthermore, I am in the process of developing a gem to streamline creating the json expected by MVCoffee and ensure it's in the proper format.  The existence of such a gem will make some of the missing documentation a little less necessary...
+
+Version 0.2 introduced many improvements over 0.1.
 
 * Macro methods!  Specify model validations now with a macro method syntax very similar
 to Rails.
@@ -193,7 +181,7 @@ JavaScript dot notation and square bracket notation.
 
 The preferred way to set these values is using macro methods.  For convenience, when 
 you declare a model class, you can assign the declaration to a shorthand temporary
-variable like "it" (if you aren't in jasmine-land), and a lowercase version of the 
+variable like "it" (if you aren't in jasmine-land), or a lowercase version of the 
 class name.  Macro method calls follow the class definition, and follow this form:
 
     thing = class Thing extends MVCoffee.Model
@@ -284,7 +272,7 @@ is the name of a method on the model.
           termsAccepted: ->
             # Some nifty calculation that results in a boolean
 
-        it.validates 'some_field', test: 'presence', only_id: "termsAccepted"
+        it.validates 'some_field', test: 'presence', only_if: "termsAccepted"
     
       
 * `unless:`  works just like `only_if:`, but causes the test to be executed only if the
@@ -547,25 +535,41 @@ If you are using Rails, this would go in your `master` file as recommended in th
 #### Loading data into models
 
 The `ModelStore` provides a method, `load`, that takes an object and loads it into 
-the store.  Any property in the store that matches a snake-cased name of a model is 
+the store.  `load` looks for a property `models` which should itself be an object in which each property represents the snake-cased name of a model in the model store.   Each matching property in the `models` sub-object is 
 converted into `Model` objects and cached.  All non-matching properties are passed
 through unmodified.  Most likely, this object is parsed JSON from the server.
 
 For example, if we had the users and activities registered above, we can do this:
 
     # the var json is of this format:
-    #   {"user":[{"id":1,"name":"Joe"},... ], "activity":[{"id":1,"user_id":1},...],
-    #       "foo": 3} 
+    #   {"models":
+    #       {"user":[{"id":1,"name":"Joe"},... ], "activity":[{"id":1,"user_id":1},...],
+    #        "foo": 3} }
     fromServer = JSON.parse(json)
 
     data = myProject.dataStore.load(fromServer)
     # data is now in this format:
-    #   {user:[MyProject.User({id:1,name:"Joe"}),...], 
-    #     activity:[MyProject.Activity({id:1,user_id:1}),...],
-    #     foo: 3}
+    #   {models:
+    #     {user:[MyProject.User({id:1,name:"Joe"}),...], 
+    #      activity:[MyProject.Activity({id:1,user_id:1}),...],
+    #      foo: 3} }
     
 At this point the store would hold all the user and activity data supplied by the json
 string.
+
+#### Deleting data from models
+
+The `load` method of `ModelStore` also will look for a property `deletes` in the passed in object.  It works very similarly to the `models` property described above, but entities are removed from the cache instead of populated.
+
+For example, if the model store was already populated from the load performed in the 
+previous section, the following would delete the "user" with name "Joe":
+
+    # the var json is of this format:
+    #   {"deletes":
+    #       {"user":[1]} }
+    fromServer = JSON.parse(json)
+
+    data = myProject.dataStore.load(fromServer)
 
 #### Querying
 
@@ -638,12 +642,6 @@ Here's an example:
     class AddItem extends MVCoffee.Controller
       onStart: ->
         #=============================================================================
-        # Glean info from the page
-        
-        item_json = $.parseJSON($("#item_json").html())
-        @item = new Item(item_json)
-
-        #=============================================================================
         # Hang on to element references we'll need
     
         @$errorsList = $('ul.errors');
@@ -657,21 +655,6 @@ Here's an example:
         $(".reorder-buttons")
           .empty()
           .append('<span class="ui-icon ui-icon-arrowthick-2-n-s"></span>');  
-
-        #=============================================================================
-        # Set up events
-    
-        @$newItemForm.submit( =>
-          @item.populate()
-          # Do something here with @item.errors to display any errors to the user
-
-          # Return whether or not @item is valid.  If you return false from the sumbit
-          # method in jQuery, it suppresses the form from submitting to the server,
-          # which is what we want: stay on this page so the user can see and fix the
-          # errors.  If we return true, the submit is posted and we pass control to the
-          # server.
-          @item.isValid()
-        )
 
         #=============================================================================
         # Convert html elements to jQuery UI
@@ -730,31 +713,43 @@ to setting `timerInterval` to either null or zero.
 ### Registering Controllers with the Controller Manager
 
 The final piece of the puzzle is the Controller Manager.  The Controller Manager handles
-detecting what the current page is as identified by the `id` tag of the page's `<body>`
-tag and deciding what controller to make active (as well as deactivating the 
-controller for the prior page if appropriate).  In order to be able to do this, it needs
-to know what controllers go with which page id's, and it needs to be started once upon the 
-document being ready.  The way to do this is have a `manager.js.coffee` (or similiarly
-named) file in your `app/assets/javascripts` directory that carries out these three steps:
+detecting which controllers should be activated based on `id` tags found within the current page (as well as deactivating the 
+controllers for the prior page if appropriate).  In order to be able to do this, it needs
+to know what controllers go with which id's, and it needs to be started once upon the 
+document being ready.  It also handles the Data Store and automatically loads the data store with json identified by a particular `id`.  The way to set all this up is to have a `manager.js.coffee` (or similiarly
+named) file in your `app/assets/javascripts` directory that carries out these five steps:
 
-* Instantiate an `MVCoffee.ControllerManager` object
-* Add an instance of each controller to the controller manager, passing the `id` for
-the page element that controller controls as an argument to the controller's constructor
-* On jQuery's document ready, call `go()` on the controller manager
+* Instantiate an `MVCoffee.ModelStore` object and pass it an object literal containing all model declarations, with the snake-case name of each model as the property id for each model declaration
+* Instantiate an `MVCoffee.ControllerManager` object and pass it an object literal 
+containing all controller declarations, with the tag `id` that should trigger starting each controller as the property id for that controller
+* Give the Controller Manager the reference to the model store
+* Tell the Controller Manager how to find the json from the server
+* On jQuery's document ready and on `pagebeforeshow`, call `go()` on the controller manager
 
 To make this concrete, here is a sample manager file adding controllers for adding and
 editing items:
 
     # Set up the data source first
+    MyNameSpace.modelStore = new MVCoffee.ModelStore
+      user: MyNameSpace.User
+      category: MyNameSpace.Category
+      item: MyNameSpace.Item
 
     controllerManager = new MVCoffee.ControllerManager
-      new_item_page: NewItemController
-      edit_item_page: EditItemController
+      new_item_page: MyNameSpace.NewItemController
+      edit_item_page: MyNameSpace.EditItemController
       # More controllers follow
       ...
 
+    controllerManager.dataId = "mvcoffee_json"
+    controllerManager.modelStore = MyNameSpace.modelStore
+
     $ ->
       controllerManager.go()
+
+    $(document).on('pagebeforeshow', ->
+      controllerManager.go()
+    )
 
 Note, this will work on a regular website in which every page load reloads everything,
 JavaScripts and all.  It will create a new instance of a controller manager on every
