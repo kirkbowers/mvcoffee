@@ -89,7 +89,7 @@ test = (callback) ->
       throw err if err
       console.log stdout + stderr
       
-      console.log("Copying mvcoffee.min.js to controller_test project")
+      console.log("Copying mvcoffee.js to controller_test project")
       copyFile('lib/mvcoffee.js',
         'test/controller_test/lib/assets/javascripts/mvcoffee.js',
         (err) ->

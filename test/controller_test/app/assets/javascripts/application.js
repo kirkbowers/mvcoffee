@@ -16,6 +16,7 @@
 //= require turbolinks
 //= require mvcoffee
 //= require_self
+//= require_directory ./models
 //= require_directory ./controllers
 //= require manager
 

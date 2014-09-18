@@ -8,27 +8,7 @@
 </head>
 <body <%= yield :body_id %> >
 
-<p id="timer">
-</p>
-
-<%= yield %>
-
-<h2><%= link_to 'Default Timer', test_default_timer_path %></h2>
-<ul class="default_timer">
-</ul>
-
-<h2><%= link_to 'Override Timer', test_override_timer_path %></h2>
-<ul class="override_timer">
-</ul>
-
-<h2><%= link_to 'No Timer', test_no_timer_path %></h2>
-<ul class="no_timer">
-</ul>
-
-<h2><%= link_to 'No Refresh', test_no_refresh_path %></h2>
-<ul class="no_refresh">
-</ul>
-
+<%= content_for?(:content) ? yield(:content) : yield %>
 
 </body>
 </html>
