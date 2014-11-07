@@ -13,6 +13,10 @@ class MVCoffee.ControllerManager
     # completely if you don't set one.
     @modelStore = new MVCoffee.ModelStore
 
+    # Set up for the kludge suggested by David Beck on stackoverflow to detect onfocus
+    # correctly on iOS.
+    @onfocusId = null
+
     # console.log("controller manager constructor, #{contrs}")
 
     for id, contr of contrs
@@ -81,6 +85,10 @@ class MVCoffee.ControllerManager
       window.onfocus = null
       window.onblur = null
       
+      if @onfocusId
+        clearInterval(@onfocusId)
+      @onfocusId = null
+      
     if newActive.length
       # console.log("Number of active controllers is " + newActive.length)
       @active = newActive
@@ -89,7 +97,26 @@ class MVCoffee.ControllerManager
       window.onfocus = =>
         @broadcast "resume"
       window.onblur = =>
-        @broadcast "pause"          
+        @broadcast "pause"    
+        
+      # This is a total kludge added in 0.3.1 to detect onfocus events in iOS
+      # Normally iOS safari does not fire onfocus when the tab is changed or it safari
+      # is relaunched from the background.
+      # However, as pointed out by David Beck on stackoverflow 
+      # http://stackoverflow.com/questions/4656387/how-to-detect-in-ios-webapp-when-switching-back-to-safari-from-background
+      # the timer is suspended.  So you can detect if the window has lost focus for some 
+      # amount of time by checking if the time since the last fire of a time is grossly
+      # longer than the timer is set for.
+      @lastFired = new Date().getTime()
+      @onfocusId = setInterval(=>
+        now = new Date().getTime()
+        $("#onfocus_timer").html(now - @lastFired)
+        if now - @lastFired > 2000
+          @broadcast "pause"
+          @broadcast "resume"
+        @lastFired = now
+      , 500)
+      
     else
       @active = []
 

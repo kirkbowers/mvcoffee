@@ -1,3 +1,14 @@
+###
+
+MVCoffee
+
+Copyright 2014, Kirk Bowers
+MIT License
+
+Version 0.3.1
+
+###
+
 # Make sure there is an MVCoffee object on the global namespace
 
 # This little bit of mojo lets us export things into node.js and letting node's 
