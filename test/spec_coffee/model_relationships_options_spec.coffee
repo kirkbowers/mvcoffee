@@ -20,33 +20,36 @@ store = new MVCoffee.ModelStore
   activity: Activity
   
 store.load
+  version: "1.0.0"
   models:
-    user: [
-      id: 1
-      name: "Bob"
-    ,
-      id: 2
-      name: "Sue"
-    ]
-    activity: [
-      id: 1
-      name: "Rake the yard"
-      position: 2
-      user_id: 1
-      owner_id: 1
-    ,
-      id: 2
-      name: "Sweep the driveway"
-      position: 1
-      user_id: 1
-      owner_id: 2
-    ,
-      id: 3
-      name: "Wash the cat"
-      position: 1
-      user_id: 2
-      owner_id: 1
-    ]
+    user: 
+      data: [
+        id: 1
+        name: "Bob"
+      ,
+        id: 2
+        name: "Sue"
+      ]
+    activity: 
+      data: [
+        id: 1
+        name: "Rake the yard"
+        position: 2
+        user_id: 1
+        owner_id: 1
+      ,
+        id: 2
+        name: "Sweep the driveway"
+        position: 1
+        user_id: 1
+        owner_id: 2
+      ,
+        id: 3
+        name: "Wash the cat"
+        position: 1
+        user_id: 2
+        owner_id: 1
+      ]
   
 describe "model macro methods for relationships with options", ->
   it "should define an activities method on User", ->

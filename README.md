@@ -94,6 +94,26 @@ manager file will be discussed in the sections
 ["Model store and queries"](#model-store) and
 ["Registering Controllers with the Controller Manager"](#controller-manager).
 
+
+
+<a name="json-format"></a>
+## JSON Format
+
+    {
+      version: <number>
+      redirect: <url>
+      flash: {}
+      errors: []
+      session: {}
+      models: {
+        <model_name>: {
+          data: [{<association>:{} ...}, {}, ...] or {}
+          deletes: []
+          replace_on: {}
+        }
+      }
+    }
+
 <a name="models"></a>
 ## Models
 

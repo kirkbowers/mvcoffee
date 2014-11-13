@@ -5,7 +5,7 @@ MVCoffee
 Copyright 2014, Kirk Bowers
 MIT License
 
-Version 0.3.1
+Version 1.0.0
 
 ###
 

@@ -153,6 +153,7 @@ task 'spec-build', 'Build the jasmine specs written in coffeescript and run them
 task 'spec', 'Run the jasmine specs', ->
   depend build, ->
     depend compile_specs, ->
+      console.log("Running jasmine tests")
       sh.run "jasmine-node test"
 
   

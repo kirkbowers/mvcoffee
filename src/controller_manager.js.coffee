@@ -4,10 +4,13 @@ class MVCoffee.ControllerManager
     @active = []
     @_flash = {}
     @_oldFlash = {}
-    # This holds the current state of the data pulled from the server
-    @data = {}
+    
+    # This holds the current state of the session data pulled from the server
+    @session = {}
+    
     # This is the default html id that is used to pull the json out of a page
-    @dataId = "server_json"
+    @dataId = "mvcoffee_json"
+    
     # This should be overridden in your master file to point to your project's
     # actual model store.  This is just here to keep things from bombing
     # completely if you don't set one.
@@ -45,15 +48,12 @@ class MVCoffee.ControllerManager
 
 
   loadData: (data) ->
-    # Most properties on the data object we want to pass through from one page to
-    # the next, but the following special purpose properties need to be cleaned out
-    # first, just in case they aren't set in the incoming data
-    delete @data.redirect
-    delete @data.errors
-    delete @data.flash
-    @data = @modelStore.load(data, @data)
-    if @data.flash?
-      @setFlash(@data.flash)
+    @modelStore.load(data)
+    if data.flash?
+      @setFlash(data.flash)
+    if data.session?
+      for key, value of data.session
+        @session[key] = value
 
   go: ->
     # Recycle the flash

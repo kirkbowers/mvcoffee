@@ -1,4 +1,6 @@
 class MVCoffee.ModelStore
+  MIN_DATA_FORMAT_VERSION: "1.0.0"
+
   constructor: (models = {}) ->
     # modelDefs holds a hash that maps a string name of a model to the constructor
     # object of that model
@@ -32,49 +34,42 @@ class MVCoffee.ModelStore
   # Any property that is not recognized as a registered model is passed through.
   # If the second parameter is supplied, the new models are merged into the supplied
   # object.
-  load: (data, result = {}) ->
-    for key, value of data
-      if key is "models"
-        result.models ||= {}
-        for objName, obj of value
-          if @modelDefs[objName]?
-            # This is a model we know about
-        
-            # If this is an array, we need to load each in turn
-            if Array.isArray obj
-              result.models[objName] = []
-              for modelObj in obj
-                model = new @modelDefs[objName](modelObj)
-                result.models[objName].push model
-                @store[objName][model.id] = model
-            else
-              model = new @modelDefs[objName](obj)
-              @store[objName][obj.id] = model
-              result.models[objName] = model
+  load: (object) ->
+    if not object.version? or object.version < @MIN_DATA_FORMAT_VERSION
+      throw "MVCoffee.DataStore requires minimum data format " + @MIN_DATA_FORMAT_VERSION
+
+    for modelName, commands of object.models
+      if @modelDefs[modelName]?
+        # This is a model we know about
+        if commands.replace_on?
+          if Array.isArray commands.replace_on
+            toBeRemoved = []
+            for foreignKeys in commands.replace_on
+              toBeRemoved = toBeRemoved.concat @where(modelName, foreignKeys)
+
           else
-            result.models[objName] = obj
-      else if key is "deletes"
-        result.deletes ||= {}
-        for objName, obj of value
-          if @modelDefs[objName]?
-            # This is a model we know about
-        
-            # If this is an array, we need to load each in turn
-            if Array.isArray obj
-              for modelId in obj
-                delete @store[objName][modelId]
-                delete result.models?[objName]?[modelId]
-            else
-              delete @store[objName][obj]
-              delete result.models?[objName]?[obj]
+            toBeRemoved = @where(modelName, commands.replace_on)
+
+          for record in toBeRemoved
+            delete @store[modelName][record.id]
+
+        if commands.data?
+          if Array.isArray commands.data
+            for modelObj in commands.data
+              model = new @modelDefs[modelName](modelObj)
+              @store[modelName][model.id] = model
           else
-            console.log("!!! Warning, trying to delete from unknown model #{objName} !!!")
-            # result.models[objName] = obj
-      else
-        # This isn't a model we know about, pass through
-        result[key] = value
-        
-    result
+            model = new @modelDefs[modelName](commands.data)
+            @store[modelName][model.id] = model
+              
+        if commands.delete?
+          # If this is an array, we need to load each in turn
+          if Array.isArray commands.delete
+            for modelId in commands.delete
+              delete @store[modelName][modelId]
+          else
+            delete @store[modelName][commands.delete]
+
       
   # find finds the one record that is of the model supplied and has the id supplied
   find: (model, id) ->
@@ -113,3 +108,5 @@ class MVCoffee.ModelStore
     for id, record of records
       result.push(record)
     result
+
+  
