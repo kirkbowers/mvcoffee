@@ -23,6 +23,7 @@ class MVCoffee.Controller
         
     
     @onStart()
+    @render()
         
     if @refresh?
       @startTimer()
@@ -165,6 +166,9 @@ class MVCoffee.Controller
     # no-op unless overridden
     
   onStop: ->
+    # no-op unless overridden
+    
+  render: ->
     # no-op unless overridden
   
   toString: ->

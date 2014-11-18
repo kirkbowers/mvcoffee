@@ -54,6 +54,16 @@ class MVCoffee.ControllerManager
     if data.session?
       for key, value of data.session
         @session[key] = value
+    # TODO!!!
+    # Maybe issue redirects here!
+    
+  get: (url) ->
+    $.get(url,
+      (data) =>
+        @loadData(data)
+        @broadcast("render")        
+      ,
+      'json')
 
   go: ->
     # Recycle the flash
