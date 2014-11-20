@@ -84,7 +84,7 @@ compile_specs = (callback) ->
 
 test = (callback) ->
   console.log("Compiling test model files")
-  exec 'coffee -j models.js -o test/js/coffee test/js/coffee/*.coffee', 
+  exec 'cat test/js/coffee/*.coffee | coffee --compile --stdio > test/js/coffee/models.js', 
     (err, stdout, stderr) ->
       throw err if err
       console.log stdout + stderr

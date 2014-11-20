@@ -871,7 +871,7 @@ method to call (with optional arguments) on every controller currently active:
 ## JSON Format
 
     {
-      version: <number>
+      mvcoffee_version: <number>
       redirect: <url>
       flash: {}
       errors: []

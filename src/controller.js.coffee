@@ -3,7 +3,33 @@ class MVCoffee.Controller
     @selector = "#" + id
     @timerId = null
     @isActive = false
+    
+    # This is a weird javascript-ism
+    # We can set up pass through methods, but we can't do it on the prototype.
+    # We have to do it only after the object has been instantiated and we have a live
+    # reference to the object we are delegating to.
+    
+    @processServerData = @manager.processServerData
+    @getFlash = @manager.getFlash
+    @getSession = @manager.getSession
+    @getErrors = @manager.getErrors
   
+  #==================================================================================
+  #
+  # Life cycle methods.
+  # 
+  # These should never be overridden.  
+  # Each provides an entry point called on<Event> that should be overridden if you need
+  # to do something when this event is fired.  Normally, onStart is the only such 
+  # entry point you should ever need.  That, and refresh.  onResume is there for 
+  # completeness sake in case you ever need to do something unique on a resume that you
+  # wouldn't have to do on a timer-fired refresh.  I can't think of what that'd be, but
+  # it's there for those things I can't anticipate...
+  # 
+  # A warning:  onPause may not always fire.  Safari in iOS does not detect the browser
+  # losing focus.  Also, onStop may not fire in some browsers when the window is closed.
+  #
+ 
   start: ->    
     # isActive keeps track of whether we actually have the focus on this controller or
     # not.  It is used to protect against running refresh prematurely.  The window
@@ -19,8 +45,6 @@ class MVCoffee.Controller
     token = jQuery("meta[name='csrf-token']")
     if token?.length
       @authenticity_token = token.attr("content");
-            
-        
     
     @onStart()
     @render()
@@ -29,12 +53,16 @@ class MVCoffee.Controller
       @startTimer()
        
   resume: ->
+    @onResume()
+  
     if @refresh? and not @isActive
       @isActive = true
       @refresh()
       @startTimer()      
   
   pause: ->
+    @onPause()
+    
     if @refresh?
       @isActive = false
       @stopTimer()
@@ -46,6 +74,11 @@ class MVCoffee.Controller
     if @refresh?
       @stopTimer()
       
+      
+  #==================================================================================
+  #
+  # turbolinkForms
+  # 
   # This method must be explicitly called inside of onStart in subclasses that want
   # to handle form submission through turbolinks.  By default, form submission causes
   # a full refresh of the page, even with turbolinks enabled.  That may not be what we
@@ -118,51 +151,70 @@ class MVCoffee.Controller
               url: element.href,
               type: 'DELETE',
               success: (data) =>
-                @processServerData(data, element)
+                @manager.processServerData(data, element.id)
               dataType: "json"
             )
           false
         )
-                    
+  
+           
+  #==================================================================================
+  #
+  # Convenience methods to fetch data over ajax
+  #
+
+  # This is get in the sense of getting json, not issuing a browser get to visit another
+  # page.
+  get: (url, callback_message) ->
+    $.get(url,
+      (data) =>
+        @manager.processServerData(data)
+        @manager.broadcast("render")        
+      ,
+      'json')
+                  
+  # This has a different naming convention than the "get" above, as it isn't just a
+  # generic post to the server.  It is "unobtrusive" posting of a form turbolinks style.
+  # The form should be provided as the element param.  This is a javascript reference to
+  # the page element, not a jQuery object.
+  # You probably never have to call this manually.  It is called for you if you 
+  # turbolinkForms the page.
   turbolinksPost: (element) ->
     # console.log "Submiting #{element.id} over turbolinks"
     jQuery.post(element.action,
       $(element).serialize(),
       (data) =>
-        @processServerData(data, element)
+        @processServerData(data, element.id)
       ,
       'json')
     false
   
-  processServerData: (data, element) ->
-    # console.log "Form submit returned: " + JSON.stringify(data)
-    if data.errors?
-      method = "#{element.id}_errors"
-      # console.log "Calling method on controller: " + method
-      if @[method]?
-        @[method](data.errors)
-      #else
-      # TODO!!!
-      # Do something to alert the user of the error
-    else
-      @manager.loadData(data)
-      # console.log("In controller post: " + JSON.stringify(data))
-      if data.redirect?
-        # @manager.flash = data.flash
-        Turbolinks.visit(data.redirect)
-      else
-        method = element.id
-        if @[method]?
-          @[method](data)
-        # else
-        # TODO!!! Do something?   
   
+  
+  #==================================================================================
+  #
+  # Refresh policy and callback
+  #
+
   # One minute, 60 millis
   refreshInterval: 60000
   
   # Overrideable template methods
   refresh: null
+
+
+  #==================================================================================
+  #
+  # Life cycle entry points
+  # 
+  
   onStart: ->
+    # no-op unless overridden
+    
+  onPause: ->
+    # no-op unless overridden
+    
+  onResume: ->
     # no-op unless overridden
     
   onStop: ->
@@ -174,6 +226,13 @@ class MVCoffee.Controller
   toString: ->
     @id
     
+    
+  #==================================================================================
+  #
+  # Handling the timer.  Do not override or call manually.  This are fired automatically
+  # by the life cycle methods.
+  # 
+  
   startTimer: ->
     if @timerId?
       @stopTimer()

@@ -10,6 +10,7 @@ class FormController < ApplicationController
       format.html
       format.json { 
         render json: { 
+          mvcoffee_version: '1.0.0',
           redirect: form_other_path,
           flash: { message: 'Post button pushed' }
         }
@@ -23,6 +24,7 @@ class FormController < ApplicationController
       format.html
       format.json { 
         render json: { 
+          mvcoffee_version: '1.0.0',
           redirect: form_other_path,
           flash: { message: "Form posted with value #{name}" }
         }
@@ -35,6 +37,7 @@ class FormController < ApplicationController
       format.html
       format.json { 
         render json: { 
+          mvcoffee_version: '1.0.0',
           redirect: form_other_path,
           flash: { message: 'Delete link clicked' }
         }

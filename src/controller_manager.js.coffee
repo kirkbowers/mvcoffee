@@ -15,6 +15,7 @@ class MVCoffee.ControllerManager
     # actual model store.  This is just here to keep things from bombing
     # completely if you don't set one.
     @modelStore = new MVCoffee.ModelStore
+    console.log("Model store = " + @modelStore)
 
     # Set up for the kludge suggested by David Beck on stackoverflow to detect onfocus
     # correctly on iOS.
@@ -39,32 +40,48 @@ class MVCoffee.ControllerManager
       if controller[message]? and typeof controller[message] is 'function'
         controller[message].apply(controller, args)
         
-  setFlash: (opts) ->
+  setFlash: (opts) =>
     for key, opt of opts
       @_flash[key] = opt
       
-  getFlash: (key) ->
+  getFlash: (key) =>
     @_flash[key] ? @_oldFlash[key]
 
-
-  loadData: (data) ->
-    @modelStore.load(data)
-    if data.flash?
-      @setFlash(data.flash)
-    if data.session?
-      for key, value of data.session
-        @session[key] = value
-    # TODO!!!
-    # Maybe issue redirects here!
+  getSession: (key) =>
+    @session[key]
     
-  get: (url) ->
-    $.get(url,
-      (data) =>
-        @loadData(data)
-        @broadcast("render")        
-      ,
-      'json')
+  getErrors: =>
+    @errors
 
+  processServerData: (data, callback_message = "") =>
+    # If we didn't get anything from the server, do nothing
+    if data
+      console.log("Got data from server: " + JSON.stringify(data))
+      console.log("Model store = " + @modelStore)
+    
+      # First load the model store.  This will do a check that the data format is as
+      # expected and throw an exception if not.
+      @modelStore.load(data)
+    
+      # We need to process the volatile data
+      if data.flash?
+        @setFlash(data.flash)
+      if data.session?
+        for key, value of data.session
+          @session[key] = value
+      @errors = data.errors
+    
+      # If a redirect was issued, that trumps calling any callbacks
+      if data.redirect?
+        Turbolinks.visit(data.redirect)
+      else if callback_message
+        # But if no redirect was issued, call either the success or failure callback
+        if @errors
+          error_callback_message = "#{callback_message}_errors"
+          @broadcast error_callback_message, @errors
+        else
+          @broadcast callback_message
+    
   go: ->
     # Recycle the flash
     @_oldFlash = @_flash
@@ -73,11 +90,11 @@ class MVCoffee.ControllerManager
     # Pull the json from the page if there is some embedded
     json = $("##{@dataId}").html()
     # console.log("Client json = " + json)
-    parsed = {}
+    parsed = null
     if json
       parsed = $.parseJSON(json)
     # console.log("Server json: " + JSON.stringify(parsed))
-    @loadData(parsed)
+    @processServerData(parsed)
     # console.log("model store = " + JSON.stringify(@modelStore.store))
   
     newActive = []
@@ -120,7 +137,6 @@ class MVCoffee.ControllerManager
       @lastFired = new Date().getTime()
       @onfocusId = setInterval(=>
         now = new Date().getTime()
-        $("#onfocus_timer").html(now - @lastFired)
         if now - @lastFired > 2000
           @broadcast "pause"
           @broadcast "resume"

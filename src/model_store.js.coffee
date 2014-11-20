@@ -35,7 +35,7 @@ class MVCoffee.ModelStore
   # If the second parameter is supplied, the new models are merged into the supplied
   # object.
   load: (object) ->
-    if not object.version? or object.version < @MIN_DATA_FORMAT_VERSION
+    if not object.mvcoffee_version? or object.mvcoffee_version < @MIN_DATA_FORMAT_VERSION
       throw "MVCoffee.DataStore requires minimum data format " + @MIN_DATA_FORMAT_VERSION
 
     for modelName, commands of object.models
