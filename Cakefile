@@ -5,7 +5,7 @@ sh = require 'execSync'
 appFiles = [
   'main'
   'pluralizer'
-  'controller_manager'
+  'runtime'
   'controller'
   'model_store'
   'model'

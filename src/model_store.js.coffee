@@ -10,10 +10,13 @@ class MVCoffee.ModelStore
     # of that model that have been fetched keyed on their "id" property
     @store = {}
     
-    for name, classdef of models
-      @addModel name, classdef
+    @register_models models
     
-  addModel: (name, classdef) ->
+  register_models: (models = {}) ->
+    for name, classdef of models
+      @_addModel name, classdef
+    
+  _addModel: (name, classdef) ->
     @modelDefs[name] = classdef
     
     # Stash the name of this model and this model store back on the prototype of the

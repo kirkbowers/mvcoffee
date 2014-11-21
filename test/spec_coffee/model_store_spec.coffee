@@ -49,7 +49,7 @@ describe "ModelStore initialization and loading", ->
     
   it "converts recognized property as an object to a model", ->
     data =
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model:
           data:
@@ -63,7 +63,7 @@ describe "ModelStore initialization and loading", ->
       
   it "converts recognized property as an array to an array of models", ->
     data =
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model:
           data: [
@@ -94,7 +94,7 @@ describe "ModelStore loading records and querying", ->
       mock_model: MockModel
       
     data =
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model:
           data: [
@@ -180,7 +180,7 @@ describe "ModelStore loading records and querying", ->
     
   it "deletes a record", ->
     store.load(
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model:
           delete: [2]
@@ -196,7 +196,7 @@ describe "ModelStore loading records and querying", ->
     
   it "replaces on a foreign key", ->
     store.load(
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model: 
           data: [
@@ -218,7 +218,7 @@ describe "ModelStore loading records and querying", ->
     
   it "replaces on an array of foreign keys", ->
     store.load(
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         mock_model: 
           data: [

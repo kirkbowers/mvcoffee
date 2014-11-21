@@ -1,6 +1,8 @@
 ControllerTest.pageLoadCounter = 0
 
-controllerManager = new MVCoffee.ControllerManager
+runtime = new MVCoffee.Runtime
+
+runtime.register_controllers
   default_timer_page: ControllerTest.DefaultTimerController
   override_timer_page: ControllerTest.OverrideTimerController
   no_timer_page: ControllerTest.NoTimerController
@@ -8,5 +10,4 @@ controllerManager = new MVCoffee.ControllerManager
   timer: ControllerTest.TimeRefreshController
   form_page: ControllerTest.FormController
 
-$ ->
-  controllerManager.go()
+runtime.run()

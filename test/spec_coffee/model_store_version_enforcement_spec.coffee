@@ -33,7 +33,7 @@ describe "ModelStore enforces version of data", ->
 
   it "bombs if incoming data has version number below the min", ->
     data =
-      version: "0.3.2"
+      mvcoffee_version: "0.3.2"
       models:
         user:
           data: [
@@ -52,7 +52,7 @@ describe "ModelStore enforces version of data", ->
 
   it "succeeds if incoming data has version number at the min", ->
     data =
-      version: "1.0.0"
+      mvcoffee_version: "1.0.0"
       models:
         user:
           data: [
@@ -69,7 +69,7 @@ describe "ModelStore enforces version of data", ->
 
   it "succeeds if incoming data has version number above the min", ->
     data =
-      version: "1.0.1"
+      mvcoffee_version: "1.0.1"
       models:
         user:
           data: [

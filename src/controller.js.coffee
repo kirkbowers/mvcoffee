@@ -1,5 +1,5 @@
 class MVCoffee.Controller
-  constructor: (@id, @manager) ->
+  constructor: (@id, @runtime) ->
     @selector = "#" + id
     @timerId = null
     @isActive = false
@@ -9,10 +9,10 @@ class MVCoffee.Controller
     # We have to do it only after the object has been instantiated and we have a live
     # reference to the object we are delegating to.
     
-    @processServerData = @manager.processServerData
-    @getFlash = @manager.getFlash
-    @getSession = @manager.getSession
-    @getErrors = @manager.getErrors
+    @processServerData = @runtime.processServerData
+    @getFlash = @runtime.getFlash
+    @getSession = @runtime.getSession
+    @getErrors = @runtime.getErrors
   
   #==================================================================================
   #
@@ -151,7 +151,7 @@ class MVCoffee.Controller
               url: element.href,
               type: 'DELETE',
               success: (data) =>
-                @manager.processServerData(data, element.id)
+                @runtime.processServerData(data, element.id)
               dataType: "json"
             )
           false
@@ -168,8 +168,8 @@ class MVCoffee.Controller
   get: (url, callback_message) ->
     $.get(url,
       (data) =>
-        @manager.processServerData(data)
-        @manager.broadcast("render")        
+        @runtime.processServerData(data)
+        @runtime.broadcast("render")        
       ,
       'json')
                   

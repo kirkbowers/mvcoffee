@@ -1,6 +1,7 @@
-class MVCoffee.ControllerManager
-  constructor: (contrs = {}) ->
+class MVCoffee.Runtime
+  constructor: ->
     @controllers = {}
+    @modelStore = new MVCoffee.ModelStore
     @active = []
     @_flash = {}
     @_oldFlash = {}
@@ -11,29 +12,26 @@ class MVCoffee.ControllerManager
     # This is the default html id that is used to pull the json out of a page
     @dataId = "mvcoffee_json"
     
-    # This should be overridden in your master file to point to your project's
-    # actual model store.  This is just here to keep things from bombing
-    # completely if you don't set one.
-    @modelStore = new MVCoffee.ModelStore
-    console.log("Model store = " + @modelStore)
-
     # Set up for the kludge suggested by David Beck on stackoverflow to detect onfocus
     # correctly on iOS.
     @onfocusId = null
 
-    # console.log("controller manager constructor, #{contrs}")
 
+
+  register_controllers: (contrs) ->
     for id, contr of contrs
-      @addController(new contr(id, this), id)
+      @_addController(new contr(id, this), id)
 
-
-  addController: (contr, id) ->
+  _addController: (contr, id) ->
     # console.log("adding controller with id #{id}")
     if id?
       @controllers[id] = contr
     else
       # This is here for backwards compatibility with v0.1
       @controllers[contr.selector] = contr
+
+  register_models: (models) ->
+    @modelStore.register_models(models)
 
   broadcast: (message, args...) ->
     for controller in @active
@@ -146,3 +144,11 @@ class MVCoffee.ControllerManager
     else
       @active = []
 
+  run: ->
+    self = this
+    $ ->
+      self.go()
+
+    $(document).on('pagebeforeshow', ->
+      self.go()
+    )

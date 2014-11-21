@@ -15,7 +15,7 @@ store = new MVCoffee.ModelStore
   activity: Activity
   
 store.load
-  version: "1.0.0"
+  mvcoffee_version: "1.0.0"
   models:
     user: 
       data: [
