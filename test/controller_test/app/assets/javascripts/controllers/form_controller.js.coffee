@@ -2,7 +2,7 @@ class ControllerTest.FormController extends MVCoffee.Controller
   onStart: ->
     ControllerTest.pageLoadCounter += 1
     $("#page-loads").html("Number of page loads: #{ControllerTest.pageLoadCounter}")
-    $("#flash").html(@manager.getFlash("message"))
+    $("#flash").html(@getFlash("message"))
     
     @thing = new ControllerTest.Thing
     

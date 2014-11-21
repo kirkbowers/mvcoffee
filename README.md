@@ -9,33 +9,15 @@ Do we really need another MVC framework for the browser?  Maybe not, but this on
 
 * **Rails-like Models for client-side caching and validating**  It's quite beneficial to 
 represent the data of an application on the client.  Round trips can be avoided by performing validation on the client and by caching information that hasn't changed.  Unfortunately, creating a copy of the model layer violates DRY (don't repeat yourself).  MVCoffee eases the pain of this duplication of effort by mimicking Rails style model declarations as closely as possible in CoffeeScript.  Model associations and validations are declared in MVCoffee using the familiar macro methods `has_many`, `belongs_to` and `validates`.  Yes, macro methods, or at least a close approximation, in CoffeeScript!
-* **Filled in holes in turbolinks**  Turbolinks makes it possible to have the benefits of client data caching previously only possible in a Single Page Application (SPA) while allowing the convenience to end-users of URL based navigation.   That is, most of the time, so long as the user clicked on a link on one of your pages.  It breaks (your cache gets wiped out) when a full page load occurs.  Out of the box, full page loads occur when a form is submitted, a button is clicked (because it is a form under the hood), or a generic redirect is issued.  MVCoffee automagically intercepts form submissions and performs them over ajax for you and issues redirects on the client side without clobbering the cache.  You're saved the effort and coding of performing validations and invoking ajax manually upon form submissions.
-* **Automatic refresh of potentially stale data**  These days, your application can be running in several browser windows simultaneously, or even multiple devices (laptop, tablet, phone, etc.) at one time.  If the user changes the data in one window, then returns to another window, that second window is operating with stale data.  MVCoffee automates doing the right thing in this situation.  All you have to do is provide the callbacks for the refresh life cycle (start, pause, resume, stop) and what the refresh policy should be (when the window regains focus, on a timer, or both), and MVCoffee takes care of firing your policy for you.  This can also be used to update UI elements (like a timer) that may have frozen when the user was viewing a different window.
+* **Filled in holes in turbolinks**  Turbolinks makes it possible to have the benefits of client data caching previously only possible in a Single Page Application (SPA) while allowing the convenience to end-users of URL based navigation.   That is, most of the time, so long as the user clicked on a link on one of your pages.  It breaks (your cache gets wiped out) when a full page load occurs.  Out of the box, full page loads occur when a form is submitted, a button is clicked (because it is a form under the hood), or a generic redirect is issued.  MVCoffee automagically intercepts form submissions and performs them over ajax for you and issues redirects on the client side without clobbering the cache.  You're saved the effort and coding of manually performing validations and invoking ajax upon form submissions.
+* **Automatic refresh of potentially stale data**  These days, your application can be running in several browser windows simultaneously, or even multiple devices (laptop, tablet, phone, etc.) at one time.  If the user changes the data in one window, then returns to another window, that second window is operating with stale data.  MVCoffee automates doing the right thing in this situation.  All you have to do is provide the callbacks for the refresh life cycle (start, pause, resume, stop) and what the refresh policy should be (when the window regains focus, on a timer, or both), and MVCoffee takes care of firing your policy for you.  This can also be used to update UI elements (like a clock) that may have frozen when the user was viewing a different window.
 
 <a name="whats-new"></a>
-# What's new in 0.3
+# What's new in 1.0
 
-Version 0.3 introduces many improvements over 0.2.
+MVCoffee is finally stable enough (hopefully) to be given a "1" in the front of the version number.  The format of the json expected from the server was strongly refactored in version 1.0, so <= 0.3 version json will cause version 1 to gack.  This shouldn't be a problem for two reasons.  One, the new json format must contain a version number in it.  If it is missing, or if it contains a number earlier than expected by the data store, an exception is thrown.  Two, there is now a rails gem [mvcoffee-rails](https://github.com/kirkbowers/mvcoffee-rails) that encapsulates the json format and includes the matching mvcoffee.js into your rails project.  Except in the extreme off chance that you are using this outside of rails, you should never have to concern yourself with the json format or build it manually.
 
-* Added the `turbolinksForms` method to the `Controller` class.  This method turns on the automagic handling of form submission by MVCoffee, providing form validation, model population, form submission through ajax and redirection through turbolinks.  This saves you a lot of code manually handling ajax and stops full page loads from happening (thus preserving the data cache).
-* Complete refactor of the format of json expected from the server.  This refactor allows a fair amount of new functionality like deleting models from the cache and providing redirects on the client-side (instead of performing a full page redirect and blowing away the cache).
-* Controller Manager now can perform automatic loading of the json from the server, handling data store loading, handling the flash data and performing redirects.
-
-NOTE:  These new features are in the process of being documented.  I've been holding off publishing this update for months as I've been struggling to document it all.  I decided to go ahead and publish and update the docs as I can.  Furthermore, I am in the process of developing a gem to streamline creating the json expected by MVCoffee and ensure it's in the proper format.  The existence of such a gem will make some of the missing documentation a little less necessary...
-
-Version 0.2 introduced many improvements over 0.1.
-
-* Macro methods!  Specify model validations now with a macro method syntax very similar
-to Rails.
-* Improved client-side caching in the new ModelStore that supports basic querying.
-* Relationships between models now supported, also with Rails style syntax for 
-declaring `has_many` and `belongs_to` relationships.
-* Auto-pluralization of model names in relationships (albeit somewhat primitive).
-* Can run more than one controller at a time, so different controllers can handle 
-parts of the page with different refresh policies.
-* Cleaner syntax for registering controllers with the controller manager.
-* All non-interactive tests ported to `jasmine-node` for running on the command line
-(instead of using QUnit in a browser).
+Also, version 1.0 fixes an incompatibility between iOS Safari and desktop browsers.  `resume` and `refresh` life cycle events should fire correctly in iOS now.
 
 <a name="dependencies"></a>
 # Dependencies
@@ -62,9 +44,7 @@ sanity check, just to see if the library loads as a node package.
 
 To use MVCoffee, all you have to do is include the minified `.js` file in your project
 add import it with a script tag before all of your controller and model declarations.
-If you are using Rails, you can use the non-minified version and the asset pipeline
-should minify it for you in production (doing so makes your `application.js` file
-read a little better).
+If you are using Rails, you can use the [mvcoffee-rails](https://github.com/kirkbowers/mvcoffee-rails) gem to automatically include the javascript into your project.
 
 You can build it from source by running in the root directory of the project:
 
@@ -77,9 +57,12 @@ to build the `.js` file into the `lib` directory or
 to both compile the CoffeeScript to JavaScript and then minify it into the `lib`
 directory.
 
-If you are using Rails and the Sprockets driven asset pipeline, you can drop the 
-regular `.js` file in your `vender/assets/javascripts` directory.  Preferably, instead of
-the usual `//= require_tree .` that appears in a default Rails project setup, you would
+If you are using Rails and the Sprockets driven asset pipeline and choose not to use the
+[mvcoffee-rails](https://github.com/kirkbowers/mvcoffee-rails) gem, you can drop the 
+regular `.js` file in your `vender/assets/javascripts` directory.  
+
+Preferably, instead of the usual `//= require_tree .` that appears in a default 
+Rails project setup, you would
 control the order of loading in your `application.js` file like so:
 
     //= require mvcoffee
@@ -94,25 +77,100 @@ manager file will be discussed in the sections
 ["Model store and queries"](#model-store) and
 ["Registering Controllers with the Controller Manager"](#controller-manager).
 
+<a name="overview"></a>
+## Overview and MVCoffee Life Cycle
 
+MVCoffee largely consists of two major components:  the `ModelStore` and the `ControllerManager`.  
 
-<a name="json-format"></a>
-## JSON Format
+The `ModelStore` manages the local cache of the server data, populates and validates all `Model` objects, and provides querying capability on all cached data.
 
-    {
-      version: <number>
-      redirect: <url>
-      flash: {}
-      errors: []
-      session: {}
-      models: {
-        <model_name>: {
-          data: [{<association>:{} ...}, {}, ...] or {}
-          deletes: []
-          replace_on: {}
-        }
-      }
-    }
+The `ControllerManager` decides which `Controller` objects should be active on each page and issues all life cycle messages to all active controllers: "start", "pause", "resume" and "stop".  The controller manager also handles all incoming JSON data, feeding model data to the model store and handling flash, errors, session data and redirect directives.
+
+The flow through an MVCoffee execution is described (as best I can) below:
+
+    ControllerManager:
+
+      on full page load:
+    
+          Models are registered with the ModelStore
+          Controllers and the ModelStore are registered with the ControllerManager
+          ControllerManager is started
+        
+      on document ready:
+    
+          ControllerManager looks for MVCoffee formatted JSON in the page,
+            if found, it is processed (see "on ControllerManager process JSON" below)
+          ControllerManager scans page for element id's that match registered Controllers
+          Matching Controllers are issued "start"
+
+      on window losing focus (user changed tabs, window or application):
+    
+          All active Controllers are issued "pause" (NOTE: losing focus is not easily 
+            detected on mobile devices.  This event may not always fire, so it should not
+            be depended upon.)
+          
+      on window regaining focus (user came back to this window):
+    
+          All active Controllers are issued "resume"
+          For Controllers that define a "refresh" method, "refresh" is automatically
+            called as part of the "resume" process
+          
+      on new page loading via Turbolinks:
+    
+          All active Controllers are issued "stop"
+          Go back to "on document ready"
+        
+      --------
+      
+      on ControllerManager process JSON
+      
+          The ModelStore is populated with the "models" property of the JSON
+          The flash, errors, and session data are populated
+          If a redirect is issued in the JSON, and if Turbolinks is enabled, the redirect
+            is issued on the client through Turbolinks (keeping the session live).
+            Go back to "on document ready"
+            
+    ======================================================
+    
+    Within each Controller:
+    
+      on start:
+    
+          The authenticity token is gleened off of the page and stashed for later use
+            (Rails only)
+          "onStart()" is called.  This is where subclasses can do initial set up.
+          If the Controller has a "refresh" method defined, the timer is started
+          
+      on pause:
+      
+          The refresh timer is stopped.
+          
+      on resume:
+      
+          If the Controller has a "refresh" method defined, it is called and the timer
+            is restarted.
+            
+      on stop:
+      
+          The refresh timer is stopped.
+          
+      --------
+      
+      in onStart:
+      
+          Any progressive enhancement should be performed.
+          jQuery UI events should be set up.
+          Any forms and buttons on the page that should be routed through Turbolinks
+            should be registered with "turbolinkForms".  (This is described in depth
+            in [Turbolink Forms](#turbolink-forms))
+          Optionally, if the page should be rerendered using javascript templates, a
+            render should be issued.
+            
+      in refresh:
+      
+          Any data that might become stale while the page is inactive should be queried 
+            from the server.
+    
 
 <a name="models"></a>
 ## Models
@@ -729,6 +787,11 @@ timer interval is one minute (60000 millis).  You can override this by setting t
 `timerInterval` to a different value, or you can disable periodic refreshing entirely
 to setting `timerInterval` to either null or zero.
 
+
+<a name="turbolink-forms"></a>
+### Turbolink Forms
+
+
 <a name="controller-manager"></a>
 ### Registering Controllers with the Controller Manager
 
@@ -802,6 +865,26 @@ your controller, you can call `@manager.broadcast` and pass it the String name o
 method to call (with optional arguments) on every controller currently active:
 
         @manager.broadcast "something_happened", args...
+
+
+<a name="json-format"></a>
+## JSON Format
+
+    {
+      mvcoffee_version: <number>
+      redirect: <url>
+      flash: {}
+      errors: []
+      session: {}
+      models: {
+        <model_name>: {
+          data: [{<association>:{} ...}, {}, ...] or {}
+          deletes: []
+          replace_on: {}
+        }
+      }
+    }
+
 
 <a name="contributing"></a>
 # Contributing

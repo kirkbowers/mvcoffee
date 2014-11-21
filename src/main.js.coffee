@@ -28,3 +28,14 @@ if !Array.isArray
   Array.isArray = (arg) ->
     Object.prototype.toString.call(arg) is '[object Array]'
 
+# At the risk of polluting the global namespace, add the rails style "link_to" function
+this.link_to = (label, link, opts = {}) ->
+  result = '<a href="' + link + '"'
+  if opts.id?
+    result += ' id="' + opts.id + '"'
+  if opts.class?
+    result += ' class="' + opts.class + '"'
+    
+  result += '>' + label + '</a>'
+  
+  result
