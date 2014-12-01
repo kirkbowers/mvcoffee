@@ -69,7 +69,8 @@ class MVCoffee.Model
     @modelStore.delete(@modelName, @id)
   
   # Just a rails like alias
-  destroy: delete
+  destroy: ->
+    @delete()
   
   #----------------------------------------------------------------------------
   # Macro method definitions

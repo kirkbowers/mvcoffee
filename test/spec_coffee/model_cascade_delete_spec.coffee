@@ -78,6 +78,17 @@ describe "models with hierarchical data", ->
     expect(Activity.all().length).toBe(0)
     expect(Subactivity.all().length).toBe(0)
         
+  it "should cascade a delete on a model that has many children using destroy alias", ->
+    user = User.find 2
+    user.destroy()
+    expect(User.all().length).toBe(1)
+    expect(User.find(2)).toBeUndefined()
+    user = User.find 1
+    expect(user.name).toBe("Bob")
+    expect(user.activities().length).toBe(0)
+    expect(Activity.all().length).toBe(0)
+    expect(Subactivity.all().length).toBe(0)
+        
   it "should cascade a delete when done by a load on the store using a scalar", ->
     store.load
       mvcoffee_version: "1.0.0"
