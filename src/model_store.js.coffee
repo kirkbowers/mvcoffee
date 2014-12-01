@@ -28,6 +28,16 @@ class MVCoffee.ModelStore
     # Initialize the store for this model
     @store[name] = {}
     
+  load_model_data: (modelName, data) ->
+    if Array.isArray data
+      for modelObj in data
+        model = new @modelDefs[modelName](modelObj)
+        @store[modelName][model.id] = model
+    else
+      model = new @modelDefs[modelName](data)
+      @store[modelName][model.id] = model
+    
+  
   # load takes an object, most likely one instantiated from json, and loads the whole
   # shebang into the datastore.  It replaces any instances that have a matching id
   # to something in the input data.
@@ -57,13 +67,7 @@ class MVCoffee.ModelStore
             delete @store[modelName][record.id]
 
         if commands.data?
-          if Array.isArray commands.data
-            for modelObj in commands.data
-              model = new @modelDefs[modelName](modelObj)
-              @store[modelName][model.id] = model
-          else
-            model = new @modelDefs[modelName](commands.data)
-            @store[modelName][model.id] = model
+          @load_model_data(modelName, commands.data)
               
         if commands.delete?
           # If this is an array, we need to load each in turn

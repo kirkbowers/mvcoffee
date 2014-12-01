@@ -194,10 +194,13 @@ class MVCoffee.Model
     if obj?
       # If we are passed an object, copy it, merging its properties into ours
       # (overwriting ours if a property already exists)
-      for field of obj
+      for field, value of obj
         # Probably unnecessary safeguard, but js objects can be wonky.
         if obj.hasOwnProperty(field)
-          this[field] = obj[field]
+          if value instanceof Object or value instanceof Array
+            @modelStore.load_model_data(field, value)
+          else
+            this[field] = value
     else
       # Otherwise, if this method was called with no argument, populate from the
       # form on the page using jquery

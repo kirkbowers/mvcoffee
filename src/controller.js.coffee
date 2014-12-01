@@ -165,8 +165,11 @@ class MVCoffee.Controller
 
   # This is get in the sense of getting json, not issuing a browser get to visit another
   # page.
+  # It sends back the entire session hash with the expectation that any caching time
+  # stamps are kept there.
   get: (url, callback_message) ->
     $.get(url,
+      @runtime.session,
       (data) =>
         @runtime.processServerData(data)
         @runtime.broadcast("render")        
