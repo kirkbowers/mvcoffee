@@ -13,6 +13,9 @@ class MVCoffee.Model
   # properties
   fields: []
   
+  # This is a pseudo-private property that lists all has many associations
+  _associations_has_many: []
+  
   errors: []
   valid: true
 
@@ -53,6 +56,21 @@ class MVCoffee.Model
   @find: (id) ->
     @prototype.modelStore.find(@prototype.modelName, id)
 
+  #----------------------------------------------------------------------------
+  # Instance methods for CRUD-type stuff
+  
+  delete: ->
+    # Recursively delete all dependent children
+    for assoc in @_associations_has_many
+      children = @[assoc]()
+      for child in children
+        child.delete()
+  
+    @modelStore.delete(@modelName, @id)
+  
+  # Just a rails like alias
+  destroy: delete
+  
   #----------------------------------------------------------------------------
   # Macro method definitions
 
@@ -147,6 +165,11 @@ class MVCoffee.Model
   # as sort of an alias to the other.
   @hasMany: (name, options = {}) ->
     methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
+    
+    # Place this on the array of has many associations
+    @prototype._associations_has_many = [] unless @prototype.hasOwnProperty("_associations_has_many")
+    @prototype._associations_has_many.push methodName
+    
     # Stash this reference, because "this" is about to change
     self = this
     @prototype[methodName] = ->

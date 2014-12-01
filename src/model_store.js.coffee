@@ -64,7 +64,7 @@ class MVCoffee.ModelStore
             toBeRemoved = @where(modelName, commands.replace_on)
 
           for record in toBeRemoved
-            delete @store[modelName][record.id]
+            @_delete_with_cascade modelName, record.id
 
         if commands.data?
           @load_model_data(modelName, commands.data)
@@ -73,9 +73,9 @@ class MVCoffee.ModelStore
           # If this is an array, we need to load each in turn
           if Array.isArray commands.delete
             for modelId in commands.delete
-              delete @store[modelName][modelId]
+              @_delete_with_cascade modelName, modelId
           else
-            delete @store[modelName][commands.delete]
+            @_delete_with_cascade modelName, commands.delete
 
       
   # find finds the one record that is of the model supplied and has the id supplied
@@ -116,4 +116,18 @@ class MVCoffee.ModelStore
       result.push(record)
     result
 
-  
+  # Dumbly deletes the record identified by id.  This may orphan child entities in a
+  # has_many relationship.  It is up to the model to cascade deletes.
+  delete: (model, id) ->
+    delete @store[model][id]
+
+  # Quasi-private method for deferring a deletion to the model being destroyed.  This
+  # allows the model to perform a cascading delete on any has_many children.
+  # It is "private" because I don't want models ever calling this.  It would cause an
+  # infinite loop.
+  _delete_with_cascade: (model, id) ->
+    record = @store[model][id]
+    if record.delete? and record.delete instanceof Function
+      record.delete()
+    else
+      delete @store[model][id]
