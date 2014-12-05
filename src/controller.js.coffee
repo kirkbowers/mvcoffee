@@ -11,7 +11,9 @@ class MVCoffee.Controller
     
     @processServerData = @runtime.processServerData
     @getFlash = @runtime.getFlash
+    @setFlash = @runtime.setFlash
     @getSession = @runtime.getSession
+    @setSession = @runtime.setSession
     @getErrors = @runtime.getErrors
     
     @timerCount = 0
@@ -100,18 +102,13 @@ class MVCoffee.Controller
           customization = customizations[element.id]
           $(element).submit ->
             doPost = true
-            # The "confirm" customization pops up a confirm dialog
-            confirm = customization.confirm
-            if confirm?
-              doPost = window.confirm(confirm)
-            
             # The "model" customization performs validation with the supplied
             # model instance.  NOTE:  it must be an instance, not a model 
             # constructor function.
             # If validation fails, the method that matches the form's id with
             # _errors appended will be called with the errors array.
             model = customization.model
-            if doPost and model?
+            if model?
               model.populate()
               method = "#{element.id}_errors"
               if self[method]?
@@ -120,9 +117,17 @@ class MVCoffee.Controller
                 console.log("!!! method #{method} not implemented !!!")
               
               doPost = model.isValid()
-            
+
+            # The "confirm" customization pops up a confirm dialog
+            confirm = customization.confirm
+            if doPost and confirm?
+              if confirm instanceof Function
+                doPost = confirm()
+              else
+                doPost = window.confirm(confirm)
+                        
             if doPost
-              self.turbolinksPost element
+              self.turbolinksSubmit element
               
             # Always return false to supress a true post 
             false
@@ -138,7 +143,7 @@ class MVCoffee.Controller
           else
             # Or just submit the form if it is a "post"
             $(element).submit =>
-              self.turbolinksPost(element)
+              self.turbolinksSubmit(element)
               false
       
       # Do the same thing for a links that have a data-method of "delete"
@@ -172,12 +177,22 @@ class MVCoffee.Controller
   # page.
   # It sends back the entire session hash with the expectation that any caching time
   # stamps are kept there.
-  get: (url, callback_message) ->
+  get: (url, callback_message = "render") ->
     $.get(url,
       @runtime.session,
       (data) =>
-        @runtime.processServerData(data)
-        @runtime.broadcast("render")        
+        @runtime.processServerData data, callback_message
+      ,
+      'json')
+                  
+  post: (url, params = {}, callback_message = "render") ->
+    $.extend params,
+        authenticity_token: @authenticity_token
+        @session
+    $.post(url,
+      params,
+      (data) =>
+        @runtime.processServerData data, callback_message
       ,
       'json')
                   
@@ -185,10 +200,14 @@ class MVCoffee.Controller
   # generic post to the server.  It is "unobtrusive" posting of a form turbolinks style.
   # The form should be provided as the element param.  This is a javascript reference to
   # the page element, not a jQuery object.
-  # You probably never have to call this manually.  It is called for you if you 
-  # turbolinkForms the page.
-  turbolinksPost: (element) ->
-    # console.log "Submiting #{element.id} over turbolinks"
+  # You usually won't have to call this manually.  It is called for you if you 
+  # turbolinkForms the page.  However, you may need to call it if you do any 
+  # 
+  turbolinksSubmit: (submitee) ->
+    element = submitee
+    if submitee instanceof jQuery
+      element = submitee.get(0)
+    console.log "Submiting #{element.id} over turbolinks"
     jQuery.post(element.action,
       $(element).serialize(),
       (data) =>

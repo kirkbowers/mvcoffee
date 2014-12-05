@@ -44,6 +44,10 @@ class MVCoffee.Runtime
       
   getFlash: (key) =>
     @_flash[key] ? @_oldFlash[key]
+    
+  setSession: (opts) =>
+    for key, opt of opts
+      @session[key] = opt
 
   getSession: (key) =>
     @session[key]
@@ -54,7 +58,7 @@ class MVCoffee.Runtime
   processServerData: (data, callback_message = "") =>
     # If we didn't get anything from the server, do nothing
     if data
-      # console.log("Got data from server: " + JSON.stringify(data))
+      console.log("Got data from server: " + JSON.stringify(data))
       # console.log("Model store = " + @modelStore)
     
       # First load the model store.  This will do a check that the data format is as
