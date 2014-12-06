@@ -221,7 +221,12 @@ class MVCoffee.Model
       for field, value of obj
         # Probably unnecessary safeguard, but js objects can be wonky.
         if obj.hasOwnProperty(field)
-          if value instanceof Object or value instanceof Array
+          # Only do the recursive loading of models into the model store on complex
+          # child data if the model store "knows about" a model with this name
+          # otherwise it's just arbitrary data (like an array of numbers, not an array
+          # of model objects)
+          if (value instanceof Object or value instanceof Array) and @modelStore.knowsAbout field
+            
             @modelStore.load_model_data(field, value)
           else
             this[field] = value

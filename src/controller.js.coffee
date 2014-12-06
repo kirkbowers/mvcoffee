@@ -95,8 +95,16 @@ class MVCoffee.Controller
     # If this is a Rails 4 project with turbolinks enabled
     if Turbolinks?
       self = this
+      
+      if customizations.scope?
+        $searchInside = jQuery(customizations.scope)
+      else
+        $searchInside = jQuery("body")
+      
       # We want to add our own "unobtrusive" javascript on every form on the page
-      jQuery("form").each (index, element) =>
+      # jQuery("form").each (index, element) =>
+      $searchInside.find("form").each (index, element) =>
+        console.log "turbolinking " + element.id
         # The allowed customizations are "confirm" and "model"
         if customizations[element.id]?
           customization = customizations[element.id]
@@ -147,8 +155,8 @@ class MVCoffee.Controller
               false
       
       # Do the same thing for a links that have a data-method of "delete"
-      jQuery("a[data-method='delete']").each (index, element) =>
-        # console.log("Found a delete link! url=" + element.href) 
+      $searchInside.find("a[data-method='delete']").each (index, element) =>
+        console.log("Found a delete link! url=" + element.href) 
         jQuery(element).click( =>
           doPost = true
           # The "confirm" customization pops up a confirm dialog

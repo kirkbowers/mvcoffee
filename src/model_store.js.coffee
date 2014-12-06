@@ -28,6 +28,15 @@ class MVCoffee.ModelStore
     # Initialize the store for this model
     @store[name] = {}
     
+  # Returns true if this model store "knows about" some model name, 
+  # that is if it has been registered with the model store.
+  # This is useful when loading the model store from json.  We can have hierarchical
+  # data where the children are models the store knows about, or properties can just
+  # contain complex data (an array or object) of some arbitrary data that is not to be
+  # interpreted as models to be converted into model objects.
+  knowsAbout: (name) ->
+    @store[name]?
+    
   load_model_data: (modelName, data) ->
     if Array.isArray data
       for modelObj in data
