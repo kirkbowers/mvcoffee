@@ -101,6 +101,7 @@ class MVCoffee.Controller
       else
         $searchInside = jQuery("body")
       
+
       # We want to add our own "unobtrusive" javascript on every form on the page
       # jQuery("form").each (index, element) =>
       $searchInside.find("form").each (index, element) =>
@@ -153,6 +154,38 @@ class MVCoffee.Controller
             $(element).submit =>
               self.turbolinksSubmit(element)
               false
+      
+      # !!!!!!!!
+      # This is ugly, non-DRY code.  It's a bit R&D-ish, fairly experimental to figure
+      # out how to do this non-intrusive js injection on a case by case basis.
+      # This needs to be cleaned up!!!!  But for the moment, it works...
+      
+      # Do the same thing for a links that have a data-method of "post"
+      console.log("Looking for post links")
+      $searchInside.find("a[data-method='post']").each (index, element) =>
+        console.log("Found a post link! url=" + element.href) 
+        console.log("element.id = " + element.id)
+        if element.id
+          console.log "Passes existence test"
+        else
+          console.log "Fails existence test"
+        jQuery(element).click( =>
+          doPost = true
+          # The "confirm" customization pops up a confirm dialog
+          confirm = jQuery(element).data("confirm")
+          if confirm?
+            doPost = window.confirm(confirm)
+
+          if doPost
+            jQuery.ajax(
+              url: element.href,
+              type: 'POST',
+              success: (data) =>
+                @runtime.processServerData(data, element.id)
+              dataType: "json"
+            )
+          false
+        )
       
       # Do the same thing for a links that have a data-method of "delete"
       $searchInside.find("a[data-method='delete']").each (index, element) =>
@@ -257,6 +290,10 @@ class MVCoffee.Controller
     
   render: ->
     # no-op unless overridden
+    
+  errors: (errors) =>
+    # Warn that the method was not overridden.
+    console.log("!!!!! The errors method was called on controller #{@toString()} but not implemented!!!!!")
   
   toString: ->
     @id

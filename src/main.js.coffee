@@ -35,6 +35,8 @@ this.link_to = (label, link, opts = {}) ->
     result += ' id="' + opts.id + '"'
   if opts.class?
     result += ' class="' + opts.class + '"'
+  if opts.method?
+    result += ' rel="nofollow" data-method="' + opts.method + '"'
     
   result += '>' + label + '</a>'
   

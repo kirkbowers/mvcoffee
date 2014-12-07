@@ -33,11 +33,23 @@ class MVCoffee.Runtime
   register_models: (models) ->
     @modelStore.register_models(models)
 
-  broadcast: (message, args...) ->
+  broadcast: (messages, args...) ->
+    # In most cases there will be only one message to broadcast, but we want to allow
+    # an array of prioritized fallbacks.  The logic is easier if we just always deal with
+    # an array, so turn the common case into the easy case.
+    unless Array.isArray messages
+      messages = [messages]
+      
     for controller in @active
-      if controller[message]? and typeof controller[message] is 'function'
-        controller[message].apply(controller, args)
-        
+      sent = false
+      i = 0
+      while not sent and i < messages.length
+        message = messages[i]
+        if message and controller[message]? and typeof controller[message] is 'function'
+          sent = true
+          controller[message].apply(controller, args)
+        i++
+      
   setFlash: (opts) =>
     for key, opt of opts
       @_flash[key] = opt
@@ -58,7 +70,7 @@ class MVCoffee.Runtime
   processServerData: (data, callback_message = "") =>
     # If we didn't get anything from the server, do nothing
     if data
-      # console.log("Got data from server: " + JSON.stringify(data))
+      console.log("Got data from server: " + JSON.stringify(data))
       # console.log("Model store = " + @modelStore)
     
       # First load the model store.  This will do a check that the data format is as
@@ -76,13 +88,21 @@ class MVCoffee.Runtime
       # If a redirect was issued, that trumps calling any callbacks
       if data.redirect?
         Turbolinks.visit(data.redirect)
-      else if callback_message
+      else
         # But if no redirect was issued, call either the success or failure callback
         if @errors
-          error_callback_message = "#{callback_message}_errors"
+          # This guards against both undefined and empty string
+          if callback_message
+            error_callback_message = ["#{callback_message}_errors", "errors"]
+          else
+            error_callback_message = "errors"
+          end
           @broadcast error_callback_message, @errors
         else
-          @broadcast callback_message
+          # If there is a success callback implemented for this form that was submitted,
+          # give that priority and give it the choice whether to call render or not.
+          # Otherwise, always render as a fallback.
+          @broadcast [callback_message, "render"]
     
   go: ->
     # Recycle the flash
