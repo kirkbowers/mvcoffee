@@ -8,33 +8,84 @@
 <p id="flash">
 </p>
 
-<p>
-  <%= link_to "Plain ol' GET link", form_other_path %>
-</p>
+<h2>These links and forms have been turbolink'd</h2>
 
-  <%= button_to "GET button to", form_other_path, method: :get %>
-<br>
+<div id="turbolink_scope">
 
-  <%= button_to "POST button to with redirect", form_post_button_path, method: :post %>
-<br>
+  <p>
+    <%= link_to "Plain ol' GET link", form_other_path %>
+  </p>
 
-  <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button'} %>
-<br>
+    <%= button_to "GET button to", form_other_path, method: :get %>
+  <br>
 
-<p>
-  <%= link_to "DELETE link", form_delete_path, method: :delete %>
-</p>
+    <%= button_to "POST button to", form_post_button_path, method: :post %>
+  <br>
 
-<ul id="thing-errors">
-</ul>
+    <%= button_to "POST button to with redirect", form_post_button_with_redirect_path, method: :post %>
+  <br>
 
-<%= form_tag form_post_form_path, method: :post, id: "thing_form" do %>
+    <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button'} %>
+  <br>
 
-<p>
-  <%= label_tag :name, 'Name' %>
-  <%= text_field_tag :name %>
-</p>
+  <p>
+    <%= link_to "DELETE link", form_delete_path, method: :delete %>
+  </p>
 
-<%= submit_tag "Go" %>
+  <p>
+    <%= link_to "POST link", form_post_link_path, method: :post %>
+  </p>
 
-<% end %>
+  <ul id="thing-errors">
+  </ul>
+
+  <%= form_tag form_post_form_path, method: :post, id: "thing_form" do %>
+
+  <p>
+    <%= label_tag :name, 'Name' %>
+    <%= text_field_tag :name %>
+  </p>
+
+  <%= submit_tag "Go" %>
+
+  <% end %>
+</div>
+
+<h2>These forms and links have not!</h2>
+
+<div id="nonturbolink_scope">
+
+    <%= button_to "GET button to", form_other_path, method: :get %>
+  <br>
+
+    <%= button_to "POST button to", form_post_button_path, method: :post %>
+  <br>
+
+    <%= button_to "POST button to with redirect", form_post_button_with_redirect_path, method: :post %>
+  <br>
+
+    <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button'}, data: { confirm: "Are you sure?" } %>
+  <br>
+
+  <p>
+    <%= link_to "DELETE link", form_delete_path, method: :delete %>
+  </p>
+
+  <p>
+    <%= link_to "POST link", form_post_link_path, method: :post %>
+  </p>
+
+  <ul id="thing-errors">
+  </ul>
+
+  <%= form_tag form_post_form_path, method: :post, id: "thing_form" do %>
+
+  <p>
+    <%= label_tag :name, 'Name' %>
+    <%= text_field_tag :name %>
+  </p>
+
+  <%= submit_tag "Go" %>
+
+  <% end %>
+</div>

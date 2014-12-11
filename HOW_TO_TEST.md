@@ -134,11 +134,26 @@ In addition to the tests described in the previous section that exercise the "re
 capability of MVCoffee controllers, there are a set of tests that exercise the 
 enhancements to Rails Turbolinks provided in MVCoffee.  In order to test these 
 enhancements, start the rails server as described above and point your browser to
-`localhost:3000/form/index`.  Click on all the different links and buttons and verify 
-that the "Number of page loads" continues to increment.  This number will only reset to
+`localhost:3000/form/index`.  
+
+The page is divided into two sections, a set of forms and buttons that are "turbolink'd" by MVCoffee, and a similar set that are not.  This allows us to test several things at once:
+* That the `scope:` property of the `turbolinkForms` command works as expected
+* That forms and buttons within that scope never cause a full refresh of the browser
+* And that forms and buttons outside of that scope (using default Rails behavior) ALWAYS cause a full refresh of the browser, thus starting a new javascript session
+
+Click on all the different links and buttons and verify that the expected behavior should occur.  
+
+Inside the turbolink'd scope, for all links, buttons and forms, ensure that
+the "Number of page loads" continues always to increment.  This number will only reset to
 one when a full non-ajax/non-turbolinks page refresh occurs, as it is set once at the 
 beginning of a full page load.  As long as the number keeps increasing, that means the
 value is cached, the javascript state is being maintained, and all page navigation and 
 redirecting is happening through Turbolinks.
 
+Outside the turbolink'd scope, all links, buttons and forms should always cause the 
+"Number of page loads" to reset to zero.  This proves that a full page load is happening
+and starting a new javascript session.  Not only does this prove that MVCoffee is 
+working as expected, but it also proves the benefit of MVCoffee, demonstrating why it's
+necessary to add this extra bit of non-intrusive javascript above and beyond what Rails
+does out of the box.
 
