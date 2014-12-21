@@ -59,8 +59,6 @@ class MVCoffee.Controller
   resume: ->
     @onResume()
   
-    console.log "resume called on controller " + @toString()
-    console.log "isActive = " + @isActive
     if @refresh? and not @isActive
       @isActive = true
       @refresh()
@@ -69,7 +67,6 @@ class MVCoffee.Controller
   pause: ->
     @onPause()
     
-    console.log "pause called on controller " + @toString()
     if @refresh?
       @isActive = false
       @stopTimer()
@@ -161,14 +158,7 @@ class MVCoffee.Controller
       # This needs to be cleaned up!!!!  But for the moment, it works...
       
       # Do the same thing for a links that have a data-method of "post"
-      console.log("Looking for post links")
       $searchInside.find("a[data-method='post']").each (index, element) =>
-        console.log("Found a post link! url=" + element.href) 
-        console.log("element.id = " + element.id)
-        if element.id
-          console.log "Passes existence test"
-        else
-          console.log "Fails existence test"
         jQuery(element).click( =>
           doPost = true
           # The "confirm" customization pops up a confirm dialog
@@ -189,7 +179,6 @@ class MVCoffee.Controller
       
       # Do the same thing for a links that have a data-method of "delete"
       $searchInside.find("a[data-method='delete']").each (index, element) =>
-        console.log("Found a delete link! url=" + element.href) 
         jQuery(element).click( =>
           doPost = true
           # The "confirm" customization pops up a confirm dialog
@@ -248,7 +237,6 @@ class MVCoffee.Controller
     element = submitee
     if submitee instanceof jQuery
       element = submitee.get(0)
-    console.log "Submiting #{element.id} over turbolinks"
     jQuery.post(element.action,
       $(element).serialize(),
       (data) =>
@@ -311,18 +299,13 @@ class MVCoffee.Controller
     if @refreshInterval? and @refreshInterval > 0
       self = this
       @timerCount += 1
-      console.log "Starting timer with count of #{@timerCount}"
       @timerId = setInterval(
         -> 
-          console.log "Firing timer with count of #{self.timerCount}"
           self.refresh.call(self) 
         @refreshInterval
       )
-      console.log "Started timerId #{@timerId}"
     
   stopTimer: ->
-    console.log("Stopping timer")
     if @timerId?
-      console.log("clearing the interval with timerId #{@timerId}")
       clearInterval(@timerId)
     @timerId = null

@@ -56,6 +56,17 @@ class MVCoffee.Model
   @find: (id) ->
     @prototype.modelStore.find(@prototype.modelName, id)
 
+  # findBy finds the first record of this model that match all conditions given.
+  # conditions is a hash of column names and values to match
+  @findBy: (conditions) ->
+    @prototype.modelStore.findBy(@prototype.modelName, conditions)
+      
+  # where finds all the records of this model that match all conditions given.
+  # conditions is a hash of column names and values to match
+  @where: (conditions) ->
+    @prototype.modelStore.where(@prototype.modelName, conditions)
+    
+
   #----------------------------------------------------------------------------
   # Instance methods for CRUD-type stuff
   

@@ -1,5 +1,11 @@
+DEFAULT_OPTS =
+  debug: false
+
 class MVCoffee.Runtime
-  constructor: ->
+  constructor: (opts = {}) ->
+    @opts = DEFAULT_OPTS
+    for opt, value of opts
+      @opts[opt] = value
     @controllers = {}
     @modelStore = new MVCoffee.ModelStore
     @active = []
@@ -23,7 +29,6 @@ class MVCoffee.Runtime
       @_addController(new contr(id, this), id)
 
   _addController: (contr, id) ->
-    # console.log("adding controller with id #{id}")
     if id?
       @controllers[id] = contr
     else
@@ -67,11 +72,11 @@ class MVCoffee.Runtime
   getErrors: =>
     @errors
 
-  processServerData: (data, callback_message = "") =>
+  _preProcessServerData: (data) =>
     # If we didn't get anything from the server, do nothing
     if data
-      console.log("Got data from server: " + JSON.stringify(data))
-      # console.log("Model store = " + @modelStore)
+      if @opts.debug
+        console.log("Got data from server: " + JSON.stringify(data))
     
       # First load the model store.  This will do a check that the data format is as
       # expected and throw an exception if not.
@@ -88,21 +93,28 @@ class MVCoffee.Runtime
       # If a redirect was issued, that trumps calling any callbacks
       if data.redirect?
         Turbolinks.visit(data.redirect)
+        return false
       else
-        # But if no redirect was issued, call either the success or failure callback
-        if @errors
-          # This guards against both undefined and empty string
-          if callback_message
-            error_callback_message = ["#{callback_message}_errors", "errors"]
-          else
-            error_callback_message = "errors"
-          end
-          @broadcast error_callback_message, @errors
+        return true
+    else
+      false
+
+  processServerData: (data, callback_message = "") =>
+    if @_preProcessServerData data
+      # But if no redirect was issued, call either the success or failure callback
+      if @errors
+        # This guards against both undefined and empty string
+        if callback_message
+          error_callback_message = ["#{callback_message}_errors", "errors"]
         else
-          # If there is a success callback implemented for this form that was submitted,
-          # give that priority and give it the choice whether to call render or not.
-          # Otherwise, always render as a fallback.
-          @broadcast [callback_message, "render"]
+          error_callback_message = "errors"
+        end
+        @broadcast error_callback_message, @errors
+      else
+        # If there is a success callback implemented for this form that was submitted,
+        # give that priority and give it the choice whether to call render or not.
+        # Otherwise, always render as a fallback.
+        @broadcast [callback_message, "render"]
     
   go: ->
     # Recycle the flash
@@ -111,50 +123,45 @@ class MVCoffee.Runtime
   
     # Pull the json from the page if there is some embedded
     json = $("##{@dataId}").html()
-    # console.log("Client json = " + json)
+
     parsed = null
     if json
       parsed = $.parseJSON(json)
-    # console.log("Server json: " + JSON.stringify(parsed))
-    @processServerData(parsed)
-    # console.log("model store = " + JSON.stringify(@modelStore.store))
-  
-    newActive = []
-    for id, contr of @controllers
-      if jQuery("##{id}").length > 0
-        # console.log("Found id for controller " + id)
-        newActive.push contr
+    if @_preProcessServerData(parsed)  
+      newActive = []
+      for id, contr of @controllers
+        if jQuery("##{id}").length > 0
+          if @opts.debug
+            console.log("Starting controller identified by " + id)
+          newActive.push contr
     
-    if @active.length
-      # We need to start a new controller, so make sure we stop the current ones if 
-      # there are any
-      @broadcast "stop"
+      if @active.length
+        # We need to start a new controller, so make sure we stop the current ones if 
+        # there are any
+        @broadcast "stop"
 
-      window.onbeforeunload = null
-      window.onfocus = null
-      window.onblur = null
+        window.onbeforeunload = null
+        window.onfocus = null
+        window.onblur = null
       
-      if @onfocusId
-        clearInterval(@onfocusId)
-      @onfocusId = null
+        if @onfocusId
+          clearInterval(@onfocusId)
+        @onfocusId = null
       
-    if newActive.length
-      # console.log("Number of active controllers is " + newActive.length)
-      @active = newActive
-      @broadcast "start"
+      if newActive.length
+        @active = newActive
+        @broadcast "start"
       
-      window.onfocus = =>
-        @_startSafariKludge()
-        console.log "onfocus detected, resuming"
-        @broadcast "resume"
-      window.onblur = =>
-        @_stopSafariKludge()
-        console.log "onblur detected, pausing"
-        @broadcast "pause"    
+        window.onfocus = =>
+          @_startSafariKludge()
+          @broadcast "resume"
+        window.onblur = =>
+          @_stopSafariKludge()
+          @broadcast "pause"    
         
-      @_startSafariKludge()
-    else
-      @active = []
+        @_startSafariKludge()
+      else
+        @active = []
 
   _startSafariKludge: ->
     @_stopSafariKludge()
@@ -168,11 +175,9 @@ class MVCoffee.Runtime
     # amount of time by checking if the time since the last fire of a time is grossly
     # longer than the timer is set for.
     @lastFired = new Date().getTime()
-    console.log "safari kludge setting last fired to #{@lastFired}"
     @onfocusId = setInterval(=>
       now = new Date().getTime()
       if now - @lastFired > 2000
-        console.log "safari onfocus kludge fired, now = #{now}, last = #{@lastFired}"
         @broadcast "pause"
         @broadcast "resume"
       @lastFired = now
