@@ -1,13 +1,3 @@
-<% content_for :body_id do %>
-  id="form_page"
-<% end %>
+<h1>This is the page that all turbolink'd GET's and redirects go</h1>
 
-<p id="page-loads">
-</p>
-
-<p id="flash">
-</p>
-
-<p>
-  <%= link_to "Back to main forms page", form_index_path %>
-</p>
+<%= render 'status' %>

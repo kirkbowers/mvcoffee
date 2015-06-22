@@ -11,22 +11,22 @@ class FormController < ApplicationController
       format.json { 
         render json: { 
           mvcoffee_version: '1.0.0',
-          redirect: form_other_path,
           flash: { message: 'Post button pushed' }
         }
       }
     end  
   end
 
-  def post_form
-    name = params[:name]
+  def post_button_with_redirect
     respond_to do |format|
-      format.html
+      format.html {
+        redirect_to form_other_path, message: 'Post button pushed and redirected'
+      }
       format.json { 
         render json: { 
           mvcoffee_version: '1.0.0',
           redirect: form_other_path,
-          flash: { message: "Form posted with value #{name}" }
+          flash: { message: 'Post button pushed and redirected' }
         }
       }
     end  
@@ -38,8 +38,32 @@ class FormController < ApplicationController
       format.json { 
         render json: { 
           mvcoffee_version: '1.0.0',
-          redirect: form_other_path,
           flash: { message: 'Delete link clicked' }
+        }
+      }
+    end  
+  end
+  
+  def post_link
+    respond_to do |format|
+      format.html
+      format.json { 
+        render json: { 
+          mvcoffee_version: '1.0.0',
+          flash: { message: 'Post link clicked' }
+        }
+      }
+    end  
+  end
+
+  def post_form
+    @name = params[:name]
+    respond_to do |format|
+      format.html
+      format.json { 
+        render json: { 
+          mvcoffee_version: '1.0.0',
+          flash: { message: "Form posted with value #{@name}" }
         }
       }
     end  

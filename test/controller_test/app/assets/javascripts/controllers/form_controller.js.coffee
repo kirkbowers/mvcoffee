@@ -1,18 +1,14 @@
 class ControllerTest.FormController extends MVCoffee.Controller
   onStart: ->
-    ControllerTest.pageLoadCounter += 1
-    $("#page-loads").html("Number of page loads: #{ControllerTest.pageLoadCounter}")
-    $("#flash").html(@getFlash("message"))
-    
     @thing = new ControllerTest.Thing
     
     
-    @turbolinkForms(
+    @turbolinkForms
+      scope: "#turbolink_scope"
       confirm_post_button:
         confirm: 'Are you sure?'
       thing_form:
         model: @thing
-    )
 
   
   thing_form_errors: (errors) ->
@@ -21,3 +17,9 @@ class ControllerTest.FormController extends MVCoffee.Controller
     
     for error in errors
       $errors.append("<li>#{error}</li>")
+
+  render: ->
+    ControllerTest.pageLoadCounter += 1
+    $("#page-loads").html("Number of page loads: #{ControllerTest.pageLoadCounter}")
+    $("#flash").html(@getFlash("message"))
+  

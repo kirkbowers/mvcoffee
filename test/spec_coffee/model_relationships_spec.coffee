@@ -78,3 +78,17 @@ describe "model macro methods for relationships", ->
     user = activity.user()
     expect(user instanceof User).toBeTruthy()
     expect(user.id).toBe(2)
+
+  it "should find a record using findBy", ->
+    activity = Activity.findBy
+      name: "Wash the cat"
+    expect(activity instanceof Activity).toBeTruthy()
+    expect(activity.id).toBe(3)
+    
+  it "should find records using where", ->
+    activities = Activity.where
+      user_id: 1
+    expect(activities.length).toBe(2)
+    expect(activities[0].id).toBe(1)
+    expect(activities[1].id).toBe(2)
+  
