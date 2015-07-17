@@ -7,3 +7,4 @@ HOW_TO_TEST.html
 node_modules
 test/*_spec.js
 /tmp
+config.gypi

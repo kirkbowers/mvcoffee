@@ -19,6 +19,8 @@ MVCoffee is finally stable enough (hopefully) to be given a "1" in the front of 
 
 Also, version 1.0 fixes an incompatibility between iOS Safari and desktop browsers.  `resume` and `refresh` life cycle events should fire correctly in iOS now.
 
+For the moment this version 1.0 only exists on the development branch.  I am working on thorough documentation and tutorials at a dedicated website (mvcoffee.org).  Once that is done I'll be releasing version 1.0 on the "master" production branch...
+
 <a name="dependencies"></a>
 # Dependencies
 
@@ -34,7 +36,6 @@ depend on [jQuery](http://jquery.com) and [QUnit](http://qunitjs.com), but fetch
 [jQuery Turbolinks](https://github.com/kossnocorp/jquery.turbolinks).  Also, for 
 completeness sake there is a [nodeunit](https://github.com/caolan/nodeunit)
 sanity check, just to see if the library loads as a node package.
-* Some of the tasks in the Cakefile depend on [execSync](https://www.npmjs.org/package/execSync).
 
 <a name="usage"></a>
 # Usage
