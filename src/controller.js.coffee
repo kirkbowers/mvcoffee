@@ -1,6 +1,6 @@
 class MVCoffee.Controller
-  constructor: (@id, @runtime) ->
-    @selector = "#" + id
+  constructor: (@id, @_runtime) ->
+    @selector = "#" + @id
     @timerId = null
     @isActive = false
     
@@ -9,14 +9,45 @@ class MVCoffee.Controller
     # We have to do it only after the object has been instantiated and we have a live
     # reference to the object we are delegating to.
     
-    @processServerData = @runtime.processServerData
-    @getFlash = @runtime.getFlash
-    @setFlash = @runtime.setFlash
-    @getSession = @runtime.getSession
-    @setSession = @runtime.setSession
-    @getErrors = @runtime.getErrors
+    # Yes, this is a lot of pass through methods!  The runtime provides most of the
+    # functionality, but ideally we don't call the runtime directly inside of 
+    # concrete controller subclasses.  That's why the reference to the runtime has a
+    # quasi-private name, with a leading underscore.  If you call it directly, it will
+    # look wonky in your code, so that should warn you that you'd better have a good
+    # reason and know what you are doing.
+    
+    @processServerData = @_runtime.processServerData
+    @getFlash = @_runtime.getFlash
+    @setFlash = @_runtime.setFlash
+    @getSession = @_runtime.getSession
+    @setSession = @_runtime.setSession
+    @getErrors = @_runtime.getErrors
+    
+    @dontClientize = @_runtime.dontClientize
+    
+    @visit = @_runtime.visit
+    @fetch = @_runtime.fetch
+    @post = @_runtime.post
+    @delete = @_runtime.delete
+    @submit = @_runtime.submit
     
     @timerCount = 0
+
+  #==================================================================================
+  #
+  # Specialized pass through methods
+  #
+  # Most things that we want to delegate to the runtime we can just call the runtime
+  # method as is.  Sometimes we need to pass a reference back to the calling
+  # controller.  Ideally, clients of this framework don't need to know when, just call
+  # any method in a consistent manner and let the pass through do the right thing.
+  #
+
+  addClientizeCustomization: (customization) ->
+    customization.controller = this
+    @_runtime.addClientizeCustomization customization  
+  
+
   
   #==================================================================================
   #
@@ -43,12 +74,6 @@ class MVCoffee.Controller
     # getting the page fresh from the server), so set the isActive flag before setting
     # the window.onfocus to fire the refresh method.
     @isActive = true
-    
-    # First thing we want to do is get the authenticity token that rails supplies,
-    # just in case this is rails on the backend
-    token = jQuery("meta[name='csrf-token']")
-    if token?.length
-      @authenticity_token = token.attr("content");
     
     @onStart()
     @render()
@@ -78,175 +103,6 @@ class MVCoffee.Controller
     if @refresh?
       @stopTimer()
       
-      
-  #==================================================================================
-  #
-  # turbolinkForms
-  # 
-  # This method must be explicitly called inside of onStart in subclasses that want
-  # to handle form submission through turbolinks.  By default, form submission causes
-  # a full refresh of the page, even with turbolinks enabled.  That may not be what we
-  # want if we have data cached client side.  Calling this method causes form submission
-  # to automagically happen over ajax, just as if turbolinks were handling it.
-  turbolinkForms: (customizations = {}) ->
-    # If this is a Rails 4 project with turbolinks enabled
-    if Turbolinks?
-      self = this
-      
-      if customizations.scope?
-        $searchInside = jQuery(customizations.scope)
-      else
-        $searchInside = jQuery("body")
-      
-
-      # We want to add our own "unobtrusive" javascript on every form on the page
-      # jQuery("form").each (index, element) =>
-      $searchInside.find("form").each (index, element) =>
-        console.log "turbolinking " + element.id
-        # The allowed customizations are "confirm" and "model"
-        if customizations[element.id]?
-          customization = customizations[element.id]
-          $(element).submit ->
-            doPost = true
-            # The "model" customization performs validation with the supplied
-            # model instance.  NOTE:  it must be an instance, not a model 
-            # constructor function.
-            # If validation fails, the method that matches the form's id with
-            # _errors appended will be called with the errors array.
-            model = customization.model
-            if model?
-              model.populate()
-              method = "#{element.id}_errors"
-              if self[method]?
-                self[method](model.errors)
-              else
-                console.log("!!! method #{method} not implemented !!!")
-              
-              doPost = model.isValid()
-
-            # The "confirm" customization pops up a confirm dialog
-            confirm = customization.confirm
-            if doPost and confirm?
-              if confirm instanceof Function
-                doPost = confirm()
-              else
-                doPost = window.confirm(confirm)
-                        
-            if doPost
-              self.turbolinksSubmit element
-              
-            # Always return false to supress a true post 
-            false
-        else
-          # No customizations being done
-          $element = $(element)
-          
-          # Just follow the link if it is a "get"
-          if element.method is "get" or element.method is "GET"
-            $(element).submit ->
-              Turbolinks.visit element.action
-              false
-          else
-            # Or just submit the form if it is a "post"
-            $(element).submit =>
-              self.turbolinksSubmit(element)
-              false
-      
-      # !!!!!!!!
-      # This is ugly, non-DRY code.  It's a bit R&D-ish, fairly experimental to figure
-      # out how to do this non-intrusive js injection on a case by case basis.
-      # This needs to be cleaned up!!!!  But for the moment, it works...
-      
-      # Do the same thing for a links that have a data-method of "post"
-      $searchInside.find("a[data-method='post']").each (index, element) =>
-        jQuery(element).click( =>
-          doPost = true
-          # The "confirm" customization pops up a confirm dialog
-          confirm = jQuery(element).data("confirm")
-          if confirm?
-            doPost = window.confirm(confirm)
-
-          if doPost
-            jQuery.ajax(
-              url: element.href,
-              type: 'POST',
-              success: (data) =>
-                @runtime.processServerData(data, element.id)
-              dataType: "json"
-            )
-          false
-        )
-      
-      # Do the same thing for a links that have a data-method of "delete"
-      $searchInside.find("a[data-method='delete']").each (index, element) =>
-        jQuery(element).click( =>
-          doPost = true
-          # The "confirm" customization pops up a confirm dialog
-          confirm = jQuery(element).data("confirm")
-          if confirm?
-            doPost = window.confirm(confirm)
-
-          if doPost
-            jQuery.ajax(
-              url: element.href,
-              type: 'DELETE',
-              success: (data) =>
-                @runtime.processServerData(data, element.id)
-              dataType: "json"
-            )
-          false
-        )
-  
-           
-  #==================================================================================
-  #
-  # Convenience methods to fetch data over ajax
-  #
-
-  # This is get in the sense of getting json, not issuing a browser get to visit another
-  # page.
-  # It sends back the entire session hash with the expectation that any caching time
-  # stamps are kept there.
-  get: (url, callback_message = "render") ->
-    $.get(url,
-      @runtime.session,
-      (data) =>
-        @runtime.processServerData data, callback_message
-      ,
-      'json')
-                  
-  post: (url, params = {}, callback_message = "render") ->
-    $.extend params,
-        authenticity_token: @authenticity_token
-        @session
-    $.post(url,
-      params,
-      (data) =>
-        @runtime.processServerData data, callback_message
-      ,
-      'json')
-                  
-  # This has a different naming convention than the "get" above, as it isn't just a
-  # generic post to the server.  It is "unobtrusive" posting of a form turbolinks style.
-  # The form should be provided as the element param.  This is a javascript reference to
-  # the page element, not a jQuery object.
-  # You usually won't have to call this manually.  It is called for you if you 
-  # turbolinkForms the page.  However, you may need to call it if you do any 
-  # 
-  turbolinksSubmit: (submitee) ->
-    element = submitee
-    if submitee instanceof jQuery
-      element = submitee.get(0)
-    jQuery.post(element.action,
-      $(element).serialize(),
-      (data) =>
-        @processServerData(data, element.id)
-      ,
-      'json')
-    false
-  
-  
-  
   #==================================================================================
   #
   # Refresh policy and callback

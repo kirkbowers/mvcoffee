@@ -2,39 +2,25 @@
   id="form_page"
 <% end %>
 
+<p>
+Client session = <%= @mvcoffee_session %>
+</p>
+
 <p id="page-loads">
+</p>
+
+<p id="cache-status">
 </p>
 
 <p id="flash">
 </p>
 
-<h2>These links and forms have been turbolink'd</h2>
+<h2>These links and forms have been clientized</h2>
 
-<div id="turbolink_scope">
+<div id="clientize_scope">
 
-  <p>
-    <%= link_to "Plain ol' GET link", form_other_path %>
-  </p>
-
-    <%= button_to "GET button to", form_other_path, method: :get %>
-  <br>
-
-    <%= button_to "POST button to", form_post_button_path, method: :post %>
-  <br>
-
-    <%= button_to "POST button to with redirect", form_post_button_with_redirect_path, method: :post %>
-  <br>
-
-    <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button'} %>
-  <br>
-
-  <p>
-    <%= link_to "DELETE link", form_delete_path, method: :delete %>
-  </p>
-
-  <p>
-    <%= link_to "POST link", form_post_link_path, method: :post %>
-  </p>
+  <h3>These should keep us on the page, increment the page count, give us a meaningful
+    flash message, and tell us the cache is up to date</h3>
 
   <ul id="thing-errors">
   </ul>
@@ -49,6 +35,60 @@
   <%= submit_tag "Go" %>
 
   <% end %>
+
+  <p>
+    <%= link_to "POST link", form_post_link_path, method: :post %>
+  </p>
+
+  <p>
+    <%= link_to "DELETE link", form_delete_path, method: :delete %>
+  </p>
+
+  <p>
+    <%= link_to "DELETE link with html confirm", form_delete_path, method: :delete, data: { confirm: 'Are you sure you want to delete from an anchor link?'}  %>
+  </p>
+
+  <p>
+    <%= button_to "POST button to", form_post_button_path, method: :post %>
+  </p>
+
+  <p>
+    <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button' } %>
+  </p>
+
+  <p>
+    <a href="#" id="refresh">Get that isn't clientized, overridden with jQuery to perform get over ajax</a>
+  </p>
+  
+  <h3>These should keep us on the page, but not increment the page count</h3>
+
+  <p>
+    <a href="#" id="toggle">Toggle message</a>
+  </p>
+  
+  <p id="toggle-message">
+    Message to be toggled.  This should be hidden, or shown, when toggle is clicked.
+  </p>
+
+  <h3>These should take us to another page, increment the page count, possibly give us a meaningful
+    flash message, and tell us the cache is up to date</h3>
+
+  <p>
+    <%= link_to "Plain ol' GET link", form_other_path %>
+  </p>
+
+  <p>
+    <%= button_to "GET button to", form_other_path, method: :get %>
+  </p>
+
+  <p>
+    <%= button_to "POST button to with redirect", form_post_button_with_redirect_path, method: :post %>
+  </p>
+
+<!--
+    <%= button_to "POST button to with confirm", form_post_button_path, method: :post, form: { id: 'confirm_post_button' }, data: { confirm: 'Are you sure?'} %>
+-->
+
 </div>
 
 <h2>These forms and links have not!</h2>
@@ -69,6 +109,10 @@
 
   <p>
     <%= link_to "DELETE link", form_delete_path, method: :delete %>
+  </p>
+
+  <p>
+    <%= link_to "DELETE link with html confirm", form_delete_path, method: :delete, data: { confirm: 'Are you sure you want to delete from an anchor link?'}  %>
   </p>
 
   <p>

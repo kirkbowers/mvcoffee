@@ -1,3 +1,17 @@
 <h1>This is the page that all turbolink'd GET's and redirects go</h1>
 
+<p>
+Client session = <%= @mvcoffee_session %>
+</p>
+
+<p id="cache-status">
+</p>
+
 <%= render 'status' %>
+
+<div id="clientize_scope">
+  <p>
+    <%= link_to "Back to main forms page", form_index_path %>
+  </p>
+
+</div>

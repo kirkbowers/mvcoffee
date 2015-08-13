@@ -1,6 +1,9 @@
 ControllerTest.pageLoadCounter = 0
 
+# It makes sense to turn on debugging in a test app, innit?
 runtime = new MVCoffee.Runtime
+  debug: true
+  clientizeScope: "#clientize_scope"
 
 runtime.register_controllers
   default_timer_page: ControllerTest.DefaultTimerController

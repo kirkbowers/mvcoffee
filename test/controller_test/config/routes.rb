@@ -7,7 +7,7 @@ ControllerTest::Application.routes.draw do
   delete "form/delete"
   post "form/post_link"
   
-  root to: "test#default_timer"
+  root to: "test#index"
 
   get "test/default_timer"
   get "test/override_timer"

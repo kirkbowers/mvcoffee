@@ -2,14 +2,26 @@ class ControllerTest.FormController extends MVCoffee.Controller
   onStart: ->
     @thing = new ControllerTest.Thing
     
-    
-    @turbolinkForms
-      scope: "#turbolink_scope"
-      confirm_post_button:
-        confirm: 'Are you sure?'
-      thing_form:
-        model: @thing
+    @addClientizeCustomization
+      selector: '#confirm_post_button'
+      confirm: 'Are you sure?'
+      
+    @addClientizeCustomization
+      selector: '#thing_form'
+      model: @thing
 
+    
+    @dontClientize "#toggle"
+    $("#toggle").click( ->
+      $("p#toggle-message").toggle(500)
+      false
+    )  
+  
+    @dontClientize "#refresh"
+    $("#refresh").click( =>
+      @fetch "/form/index"
+      false
+    )  
   
   thing_form_errors: (errors) ->
     $errors = $("#thing-errors")
@@ -22,4 +34,5 @@ class ControllerTest.FormController extends MVCoffee.Controller
     ControllerTest.pageLoadCounter += 1
     $("#page-loads").html("Number of page loads: #{ControllerTest.pageLoadCounter}")
     $("#flash").html(@getFlash("message"))
+    $("#cache-status").html(@getFlash("cache_status"))
   

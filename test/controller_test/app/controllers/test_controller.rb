@@ -1,6 +1,10 @@
 class TestController < ApplicationController
   layout 'test'
 
+  def index
+    render layout: 'application'
+  end
+
   def default_timer
   end
 

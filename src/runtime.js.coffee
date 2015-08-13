@@ -1,5 +1,6 @@
 DEFAULT_OPTS =
   debug: false
+  clientizeScope: 'body'
 
 class MVCoffee.Runtime
   constructor: (opts = {}) ->
@@ -11,6 +12,7 @@ class MVCoffee.Runtime
     @active = []
     @_flash = {}
     @_oldFlash = {}
+    @_clientizeCustomizations = []
     
     # This holds the current state of the session data pulled from the server
     @session = {}
@@ -55,6 +57,11 @@ class MVCoffee.Runtime
           controller[message].apply(controller, args)
         i++
       
+  _recycleFlash: ->
+    # Recycle the flash
+    @_oldFlash = @_flash
+    @_flash = {}
+
   setFlash: (opts) =>
     for key, opt of opts
       @_flash[key] = opt
@@ -72,6 +79,8 @@ class MVCoffee.Runtime
   getErrors: =>
     @errors
 
+  # This method returns false if a redirect is issued, meaning only continue processing
+  # if true is returned.
   _preProcessServerData: (data) =>
     # If we didn't get anything from the server, do nothing
     if data
@@ -87,6 +96,7 @@ class MVCoffee.Runtime
         @setFlash(data.flash)
       if data.session?
         for key, value of data.session
+          @log "Setting session value #{key} to value #{value} from server"
           @session[key] = value
       @errors = data.errors
     
@@ -97,11 +107,15 @@ class MVCoffee.Runtime
       else
         return true
     else
-      false
+      # This used to by "false".  I don't remember why.  It caused the controller_test
+      # pre-rolled blackbox test to do nothing, because there's no data from the
+      # server.  This isn't the behavior we want.  We should be able to fire 
+      # controllers on a data-free page.
+      true
 
   processServerData: (data, callback_message = "") =>
     if @_preProcessServerData data
-      # But if no redirect was issued, call either the success or failure callback
+      # If no redirect was issued, call either the success or failure callback
       if @errors
         # This guards against both undefined and empty string
         if callback_message
@@ -116,10 +130,27 @@ class MVCoffee.Runtime
         # Otherwise, always render as a fallback.
         @broadcast [callback_message, "render"]
     
+  log: (message) =>
+    if @opts.debug
+      console.log message
+  
   go: ->
-    # Recycle the flash
-    @_oldFlash = @_flash
-    @_flash = {}
+    @log "MVCoffee runtime firing 'go'"
+    
+    # First thing we want to do is get the authenticity token that rails supplies,
+    # just in case this is rails on the backend
+    token = jQuery("meta[name='csrf-token']")
+    if token?.length
+      @authenticity_token = token.attr("content");
+      
+    # Clear the session cookie
+    document.cookie = "mvcoffee_session="
+
+    @_recycleFlash()
+  
+    # Reset the clientize customizations before we start this pages controllers.
+    # Controllers add their own clientize customizations as part of their start up.
+    @resetClientizeCustomizations()
   
     # Pull the json from the page if there is some embedded
     json = $("##{@dataId}").html()
@@ -131,8 +162,7 @@ class MVCoffee.Runtime
       newActive = []
       for id, contr of @controllers
         if jQuery("##{id}").length > 0
-          if @opts.debug
-            console.log("Starting controller identified by " + id)
+          @log "Starting controller identified by " + id
           newActive.push contr
     
       if @active.length
@@ -162,6 +192,10 @@ class MVCoffee.Runtime
         @_startSafariKludge()
       else
         @active = []
+        
+      # Now that the new controllers have been started, it's time to clientize the 
+      # current page with our own additional unobtrusive javascript
+      @clientize()
 
   _startSafariKludge: ->
     @_stopSafariKludge()
@@ -188,7 +222,209 @@ class MVCoffee.Runtime
       clearInterval(@onfocusId)
     @onfocusId = null
 
+
+  #---------------------------------------------------------------------------
+  # "clientize" adds unobtrusive javascript to do two things:
+  # - keep us on the client entirely if possible.  Out of the box, turbolinks only 
+  #   adds ujs to get anchors, but not forms nor post or delete anchors.
+  # - send back client side session data back to server.  If we have a time stamp of
+  #   the cache age on the client, we need to send this back.  Of course, we don't want
+  #   to have to think about sending it back, so this does it automagically.
+  #
+  # This is a "public" method, in that I don't prefix it with an underscore, but you
+  # probably never have to call it manually.  It's called for you at the correct time
+  # as part of the runtime's "go" action.
+  
+  clientize: ->
+    @log ">>> begin clientize"
+    if Turbolinks?
+      self = this
+      
+      $searchInside = jQuery(@opts.clientizeScope)
+
+      # We want to add our own "unobtrusive" javascript on every form on the page
+      $searchInside.find("form").each (index, element) =>
+        self.log "clientizing form with action " + jQuery(element).attr("action")
+
+        customization = {}
+        for thisCustom in @_clientizeCustomizations
+          # The allowed customizations are "confirm" and "model"
+          if $(element).is(thisCustom.selector)
+            customization = thisCustom
+
+        unless customization.ignore? is true
+          $(element).submit ->
+            doPost = true
+            self.log "Submitting for selector " + customization.selector
+            # The "model" customization performs validation with the supplied
+            # model instance.  NOTE:  it must be an instance, not a model 
+            # constructor function.
+            # If validation fails, the method that matches the form's id with
+            # _errors appended will be called with the errors array.
+            model = customization.model
+            self.log "model = " + model
+            if model?
+              model.populate()
+              method = "#{element.id}_errors"
+              if customization.controller?[method]?
+                customization.controller?[method](model.errors)
+              else
+                console.log("!!! method #{method} not implemented !!!")
+            
+              doPost = model.isValid()
+
+            # The "confirm" customization pops up a confirm dialog
+            confirm = customization.confirm
+            self.log "confirm customization = " + confirm
+            if doPost and confirm?
+              if confirm instanceof Function
+                doPost = confirm()
+              else
+                doPost = window.confirm(confirm)
+                      
+            if doPost
+              if element.method is "get" or element.method is "GET"
+                self.visit element.action
+              else            
+                self.submit element
+            
+            # Always return false to supress a true post 
+            false
+
+      # We also want to do our own unobtrusive javascript on all anchor tags.
+      # This is a bit non-DRY, but slightly different things happen on anchor
+      # tags as on forms.  For the moment I can live with it, but I'll probably clean
+      # this up at some point.  It is less than ideal that it currently does not allow
+      # a confirm message from the customization...    
+      $searchInside.find("a").each (index, element) =>
+        self.log "clientizing anchor " + element.id
+        customization = {}
+        for thisCustom in @_clientizeCustomizations
+          # The allowed customizations are "confirm" and "model"
+          if $(element).is(thisCustom.selector)
+            customization = thisCustom
+
+        unless customization.ignore? is true
+          jQuery(element).click( =>
+            doPost = true
+            # The "confirm" customization pops up a confirm dialog
+            confirm = jQuery(element).data("confirm")
+            if confirm?
+              doPost = window.confirm(confirm)
+
+            if doPost
+              method = $(element).attr('data-method')
+              self.log "Data method = " + method
+              if method is "post"
+                self.post(element.href, element.id)
+              else if method is "delete"
+                self.delete(element.href, element.id)
+              else
+                self.visit(element.href)
+            false
+          )
+    @log "<<< end clientize"
+
+
+  resetClientizeCustomizations: ->
+    @_clientizeCustomizations = []  
+
+  addClientizeCustomization: (customization) ->
+    @_clientizeCustomizations.push customization
+    
+  dontClientize: (selector) =>
+    @_clientizeCustomizations.push
+      selector: selector
+      ignore: true
+
+  #---------------------------------------------------------------------------
+  # 
+  # Methods for getting and posting to the server
+  #
+  # In MVCoffee land, you should never have to call ajax to your own server manually,
+  # unless you're talking to some legacy non-MVCoffee routes.  Instead, you should
+  # always use the methods supplied here.
+  # For one, they automate for you sending the client session data back to the server,
+  # which is useful for determining if the cache is out of date or not.
+  # For two, they also automate processing the data sent from the server.  This will
+  # make sure the cache, session and flash are properly populated, plus it will handle
+  # any client-side redirects issued by the server.
+
+  _setSessionCookie: ->
+    params = jQuery.param(@session)
+    expiration = new Date()
+    expiration.setTime(expiration.getTime() + 2000)
+    document.cookie = "mvcoffee_session=#{params}; expires=#{expiration}"
+                  
+                  
+  # There is no "get" method.  Instead the functionality of "get" is provided by two
+  # different methods, visit and fetch.  "visit" is a "get" over regular html, meaning
+  # _visit_ this page.  "fetch" is a "get" over ajax, meaning _fetch_ the data that
+  # this url provides in json format, but do not navigate anywhere (unless the fetched
+  # data contains a redirect instruction).
+                  
+  visit: (url) =>
+    # We're recycling the flash here because it should only persist through a redirect.
+    @_recycleFlash()
+    @_setSessionCookie()
+    Turbolinks.visit url
+
+  fetch: (url, callback_message = "render") =>
+    @_setSessionCookie()
+    jQuery.get(url,
+      null,
+      (data) =>
+        @processServerData data, callback_message
+      ,
+      'json')
+
+  # "post" is also broken into two different versions, but unlike the "visit" method,
+  # there is no method that involves navigation.  "post" simply calls a post over ajax
+  # to the url supplied.  "submit" submits the form referenced by the DOM element
+  # or jQuery object supplied over ajax.
+
+  post: (url, callback_message = "") =>
+    @_setSessionCookie()
+    self = this
+    jQuery.ajax(
+      url: url,
+      type: 'POST',
+      success: (data) =>
+        self.processServerData(data, callback_message)
+      dataType: "json"
+    )
+
+  submit: (submitee) =>
+    @_setSessionCookie()
+    element = submitee
+    if submitee instanceof jQuery
+      element = submitee.get(0)
+    jQuery.post(element.action,
+      $(element).serialize(),
+      (data) =>
+        @processServerData(data, element.id)
+      ,
+      'json')
+    false
+
+  delete: (url, callback_message = "") =>
+    @_setSessionCookie()
+    self = this
+    jQuery.ajax(
+      url: url,
+      type: 'DELETE',
+      success: (data) =>
+        self.processServerData(data, callback_message)
+      dataType: "json"
+    )
+
+
+
+  #---------------------------------------------------------------------------
+  # "run" starts the whole runtime.  
+  
   run: ->
+    @log "MVCoffee runtime run"
     self = this
     $ ->
       self.go()
