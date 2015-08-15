@@ -25,6 +25,11 @@ class MVCoffee.Controller
     
     @dontClientize = @_runtime.dontClientize
     
+    # This is named "re" to remind you that you only ever call this if you've redrawn
+    # some section of the screen in your render method.  Only call this on the scope of
+    # the area you've redrawn
+    @reclientize = @_runtime.clientize
+    
     @visit = @_runtime.visit
     @fetch = @_runtime.fetch
     @post = @_runtime.post
@@ -76,7 +81,10 @@ class MVCoffee.Controller
     @isActive = true
     
     @onStart()
-    @render()
+    # I don't want render to happen automatically here anymore.  I want the runtime
+    # to fire it after it's done the clientize, just in case render redraws something
+    # and needs to reclientize just that scope.
+    # @render()
         
     if @refresh?
       @startTimer()

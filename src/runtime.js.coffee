@@ -196,6 +196,8 @@ class MVCoffee.Runtime
       # Now that the new controllers have been started, it's time to clientize the 
       # current page with our own additional unobtrusive javascript
       @clientize()
+      
+      @broadcast "render"
 
   _startSafariKludge: ->
     @_stopSafariKludge()
@@ -235,16 +237,17 @@ class MVCoffee.Runtime
   # probably never have to call it manually.  It's called for you at the correct time
   # as part of the runtime's "go" action.
   
-  clientize: ->
-    @log ">>> begin clientize"
+  clientize: (scope = null) =>
+    # @log ">>> begin clientize"
     if Turbolinks?
       self = this
       
-      $searchInside = jQuery(@opts.clientizeScope)
+      scope = scope ? @opts.clientizeScope
+      # @log "Searching with scope " + scope
+      $searchInside = jQuery(scope)
 
       # We want to add our own "unobtrusive" javascript on every form on the page
       $searchInside.find("form").each (index, element) =>
-        self.log "clientizing form with action " + jQuery(element).attr("action")
 
         customization = {}
         for thisCustom in @_clientizeCustomizations
@@ -253,29 +256,33 @@ class MVCoffee.Runtime
             customization = thisCustom
 
         unless customization.ignore? is true
+          self.log "clientizing form with action " + jQuery(element).attr("action")
           $(element).submit ->
             doPost = true
-            self.log "Submitting for selector " + customization.selector
+            # self.log "Submitting for selector " + customization.selector
             # The "model" customization performs validation with the supplied
             # model instance.  NOTE:  it must be an instance, not a model 
             # constructor function.
             # If validation fails, the method that matches the form's id with
             # _errors appended will be called with the errors array.
             model = customization.model
-            self.log "model = " + model
+            callback = customization.callback ? element.id
+            # self.log "model = " + model
             if model?
               model.populate()
-              method = "#{element.id}_errors"
+              method = "#{callback}_errors"
               if customization.controller?[method]?
-                customization.controller?[method](model.errors)
+                customization.controller[method](model.errors)
               else
                 console.log("!!! method #{method} not implemented !!!")
+                if customization.controller?.errors?
+                  customization.controller.errors(model.errors)
             
               doPost = model.isValid()
 
             # The "confirm" customization pops up a confirm dialog
             confirm = customization.confirm
-            self.log "confirm customization = " + confirm
+            # self.log "confirm customization = " + confirm
             if doPost and confirm?
               if confirm instanceof Function
                 doPost = confirm()
@@ -286,7 +293,7 @@ class MVCoffee.Runtime
               if element.method is "get" or element.method is "GET"
                 self.visit element.action
               else            
-                self.submit element
+                self.submit element, callback
             
             # Always return false to supress a true post 
             false
@@ -297,7 +304,6 @@ class MVCoffee.Runtime
       # this up at some point.  It is less than ideal that it currently does not allow
       # a confirm message from the customization...    
       $searchInside.find("a").each (index, element) =>
-        self.log "clientizing anchor " + element.id
         customization = {}
         for thisCustom in @_clientizeCustomizations
           # The allowed customizations are "confirm" and "model"
@@ -305,6 +311,8 @@ class MVCoffee.Runtime
             customization = thisCustom
 
         unless customization.ignore? is true
+          self.log "clientizing anchor with target " + jQuery(element).attr("href")
+          callback = customization.callback ? element.id
           jQuery(element).click( =>
             doPost = true
             # The "confirm" customization pops up a confirm dialog
@@ -314,16 +322,16 @@ class MVCoffee.Runtime
 
             if doPost
               method = $(element).attr('data-method')
-              self.log "Data method = " + method
+              # self.log "Data method = " + method
               if method is "post"
-                self.post(element.href, element.id)
+                self.post(element.href, {}, callback)
               else if method is "delete"
-                self.delete(element.href, element.id)
+                self.delete(element.href, callback)
               else
                 self.visit(element.href)
             false
           )
-    @log "<<< end clientize"
+    # @log "<<< end clientize"
 
 
   resetClientizeCustomizations: ->
@@ -383,18 +391,19 @@ class MVCoffee.Runtime
   # to the url supplied.  "submit" submits the form referenced by the DOM element
   # or jQuery object supplied over ajax.
 
-  post: (url, callback_message = "") =>
+  post: (url, params = {}, callback_message = "") =>
     @_setSessionCookie()
     self = this
     jQuery.ajax(
       url: url,
+      data: params,
       type: 'POST',
       success: (data) =>
         self.processServerData(data, callback_message)
       dataType: "json"
     )
 
-  submit: (submitee) =>
+  submit: (submitee, callback_message = "") =>
     @_setSessionCookie()
     element = submitee
     if submitee instanceof jQuery
@@ -402,7 +411,7 @@ class MVCoffee.Runtime
     jQuery.post(element.action,
       $(element).serialize(),
       (data) =>
-        @processServerData(data, element.id)
+        @processServerData(data, callback_message)
       ,
       'json')
     false
