@@ -167,6 +167,17 @@ describe "ModelStore loading records and querying", ->
     expect(result instanceof Array).toBeTruthy()
     expect(result.length).toBe(0)
 
+  it "finds an array of all objects when there are no condition on where", ->
+    result = store.where("mock_model", {})
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(3)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(2)
+    expect(result[2] instanceof MockModel).toBeTruthy()
+    expect(result[2].id).toBe(3)
+
   it "finds an array of all instances with all", ->
     result = store.all("mock_model")
     expect(result instanceof Array).toBeTruthy()

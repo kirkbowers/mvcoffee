@@ -75,6 +75,9 @@ class MVCoffee.ModelStore
           for record in toBeRemoved
             @_delete_with_cascade modelName, record.id
 
+    for modelName, commands of object.models
+      if @modelDefs[modelName]?
+        # This is a model we know about
         if commands.data?
           @load_model_data(modelName, commands.data)
               
