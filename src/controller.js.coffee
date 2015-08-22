@@ -23,6 +23,8 @@ class MVCoffee.Controller
     @setSession = @_runtime.setSession
     @getErrors = @_runtime.getErrors
     
+    @broadcast = @_runtime.broadcast
+    
     @dontClientize = @_runtime.dontClientize
     
     # This is named "re" to remind you that you only ever call this if you've redrawn
