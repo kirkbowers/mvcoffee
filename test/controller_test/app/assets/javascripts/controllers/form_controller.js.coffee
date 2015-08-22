@@ -10,6 +10,9 @@ class ControllerTest.FormController extends MVCoffee.Controller
       selector: '#thing_form'
       model: @thing
 
+    @addClientizeCustomization
+      selector: '#delete_anchor_link_with_confirm'
+      confirm: 'Are you sure you want to delete from a clientized delete link?'
     
     @dontClientize "#toggle"
     $("#toggle").click( ->

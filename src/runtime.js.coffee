@@ -40,22 +40,33 @@ class MVCoffee.Runtime
   register_models: (models) ->
     @modelStore.register_models(models)
 
-  broadcast: (messages, args...) ->
+  narrowcast: (controller, messages, args...) =>
+    # This does the same thing as broadcast below, but only on one controller.
+    # This is mostly useful for having a sequence of fallback methods to be called.
+
     # In most cases there will be only one message to broadcast, but we want to allow
     # an array of prioritized fallbacks.  The logic is easier if we just always deal with
     # an array, so turn the common case into the easy case.
     unless Array.isArray messages
       messages = [messages]
+
+    sent = false
+    i = 0
+    while not sent and i < messages.length
+      message = messages[i]
+      if message and controller[message]? and typeof controller[message] is 'function'
+        sent = true
+        controller[message].apply(controller, args)
+      i++
+
+  broadcast: (messages, args...) =>
+    unless Array.isArray messages
+      messages = [messages]
       
     for controller in @active
-      sent = false
-      i = 0
-      while not sent and i < messages.length
-        message = messages[i]
-        if message and controller[message]? and typeof controller[message] is 'function'
-          sent = true
-          controller[message].apply(controller, args)
-        i++
+      @narrowcast controller, messages, args
+
+
       
   _recycleFlash: ->
     # Recycle the flash
@@ -228,7 +239,7 @@ class MVCoffee.Runtime
   #---------------------------------------------------------------------------
   # "clientize" adds unobtrusive javascript to do two things:
   # - keep us on the client entirely if possible.  Out of the box, turbolinks only 
-  #   adds ujs to get anchors, but not forms nor post or delete anchors.
+  #   adds ujs to "get" anchors, but not forms, or post or delete anchors.
   # - send back client side session data back to server.  If we have a time stamp of
   #   the cache age on the client, we need to send this back.  Of course, we don't want
   #   to have to think about sending it back, so this does it automagically.
@@ -246,91 +257,130 @@ class MVCoffee.Runtime
       # @log "Searching with scope " + scope
       $searchInside = jQuery(scope)
 
-      # We want to add our own "unobtrusive" javascript on every form on the page
-      $searchInside.find("form").each (index, element) =>
+      # This is tricky.  There are two types of things we want to clientize, "form"
+      # and "a" tags.  For both types of tags, most of the possible customizations
+      # apply.  We want to be able to 
+      # * ignore the tag (dontClientize)
+      # * override the callback
+      # * look for a data-confirm on the element and do the right thing with it,
+      #   and/or allow for a confirm customization
+      # 
+      # BUT!
+      #
+      # We want to do a few different things with forms than we do with anchors
+      # * The jQuery event is different, "submit" for forms, "click" for anchors
+      # * Forms can additionally have a "model" customization, and need to perform
+      #   an extra validation step
+      # * How to execute the submission to the server is different
+      #
+      # So, probably the cleanest way to do this is to make a named function here
+      # inside this method that takes two strings and two anonymous functions as 
+      # arguments, then call that function twice, once for forms, once for anchors.
+      
+      applyClientize = (selector, event, validation, submission) ->
+        $searchInside.find(selector).each (index, element) ->
 
-        customization = {}
-        for thisCustom in @_clientizeCustomizations
-          # The allowed customizations are "confirm" and "model"
-          if $(element).is(thisCustom.selector)
-            customization = thisCustom
+          customization = {}
+          for thisCustom in self._clientizeCustomizations
+            # The allowed customizations are "confirm" and "model"
+            if jQuery(element).is(thisCustom.selector)
+              customization = thisCustom
 
-        unless customization.ignore? is true
-          self.log "clientizing form with action " + jQuery(element).attr("action")
-          $(element).submit ->
-            doPost = true
-            # self.log "Submitting for selector " + customization.selector
-            # The "model" customization performs validation with the supplied
-            # model instance.  NOTE:  it must be an instance, not a model 
-            # constructor function.
-            # If validation fails, the method that matches the form's id with
-            # _errors appended will be called with the errors array.
-            model = customization.model
-            callback = customization.callback ? element.id
-            # self.log "model = " + model
-            if model?
-              model.populate()
-              method = "#{callback}_errors"
-              if customization.controller?[method]?
-                customization.controller[method](model.errors)
-              else
-                console.log("!!! method #{method} not implemented !!!")
-                if customization.controller?.errors?
-                  customization.controller.errors(model.errors)
+          unless customization.ignore
+            jQuery(element).on event, (eventObject) ->
+              callback = element.id
+              
+              # Nice thing about coffeescript, this will only evaluate to true if 
+              # customization.callback is non-null and isn't an empty string.
+              # Nice shorthand...
+              if customization.callback
+                callback = customization.callback
+  
+              # callback could still be undefined at this point if the element did not
+              # have an "id" and if there was no customization.
+              # In this case, "render" will be the success callback and "errors" will
+              # be the failure callback.
+  
+              # validation needs to be a function that takes the callback as an arg.
+              # For forms, this is the place to populate against a model.
+              # For anchors, it should just dumbly return true
+              # The return value is whether or not the form data was valid, and whether
+              # or not we should proceed trying to submit this data.
+              doPost = validation customization, callback
+              
+              # If we should proceed (the form data, if any, is valid), see if we need
+              # to confirm first
+              if doPost
+                # Look for a confirmation message in the page first
+                confirm = jQuery(element).data("confirm")
+                
+                # Any customization provided by the controller should trump what was on
+                # the page.
+                if customization.confirm
+                  confirm = customization.confirm
+                
+                if confirm
+                  if confirm instanceof Function
+                    doPost = confirm()
+                  else
+                    doPost = window.confirm(confirm)
+
+              if doPost
+                submission element, callback
+
+              # Always return false to supress a true post 
+              false
+              
+      # With that bit of fancy functional programming set up, let's apply it to 
+      # all form elements.        
+
+      applyClientize "form",
+        "submit",
+        (customization, callback) ->
+          self.log "Calling validation anon function"
+          model = customization.model
+          self.log "Model = " + model
+          if model?
+            model.populate()
+            method = "errors"
+            if callback
+              method = ["#{callback}_errors", "errors"]
+            self.log "Callback = " + method
+            self.log "Controller = " + customization.controller
+            if customization.controller?
+              self.narrowcast customization.controller, method, model.errors
+          
+            model.isValid()
+          else
+            # If there is no model to validate on this form, we always want to proceed
+            # at this step
+            true
+        , 
+        (element, callback) ->
+          if element.method is "get" or element.method is "GET"
+            self.visit element.action
+          else            
+            self.submit element, callback
             
-              doPost = model.isValid()
-
-            # The "confirm" customization pops up a confirm dialog
-            confirm = customization.confirm
-            # self.log "confirm customization = " + confirm
-            if doPost and confirm?
-              if confirm instanceof Function
-                doPost = confirm()
-              else
-                doPost = window.confirm(confirm)
-                      
-            if doPost
-              if element.method is "get" or element.method is "GET"
-                self.visit element.action
-              else            
-                self.submit element, callback
-            
-            # Always return false to supress a true post 
-            false
 
       # We also want to do our own unobtrusive javascript on all anchor tags.
-      # This is a bit non-DRY, but slightly different things happen on anchor
-      # tags as on forms.  For the moment I can live with it, but I'll probably clean
-      # this up at some point.  It is less than ideal that it currently does not allow
-      # a confirm message from the customization...    
-      $searchInside.find("a").each (index, element) =>
-        customization = {}
-        for thisCustom in @_clientizeCustomizations
-          # The allowed customizations are "confirm" and "model"
-          if $(element).is(thisCustom.selector)
-            customization = thisCustom
 
-        unless customization.ignore? is true
-          self.log "clientizing anchor with target " + jQuery(element).attr("href")
-          callback = customization.callback ? element.id
-          jQuery(element).click( =>
-            doPost = true
-            # The "confirm" customization pops up a confirm dialog
-            confirm = jQuery(element).data("confirm")
-            if confirm?
-              doPost = window.confirm(confirm)
-
-            if doPost
-              method = $(element).attr('data-method')
-              # self.log "Data method = " + method
-              if method is "post"
-                self.post(element.href, {}, callback)
-              else if method is "delete"
-                self.delete(element.href, callback)
-              else
-                self.visit(element.href)
-            false
-          )
+      applyClientize "a",
+        "click",
+        (customization, callback) ->
+          # There is no form to validate on anchor tags, so just return true
+          true
+        ,
+        (element, callback) ->
+          method = $(element).data('method')
+          # self.log "Data method = " + method
+          if method is "post"
+            self.post(element.href, {}, callback)
+          else if method is "delete"
+            self.delete(element.href, callback)
+          else
+            self.visit(element.href)
+        
     # @log "<<< end clientize"
 
 
@@ -377,7 +427,7 @@ class MVCoffee.Runtime
     @_setSessionCookie()
     Turbolinks.visit url
 
-  fetch: (url, callback_message = "render") =>
+  fetch: (url, callback_message = "") =>
     @_setSessionCookie()
     jQuery.get(url,
       null,
@@ -388,8 +438,8 @@ class MVCoffee.Runtime
 
   # "post" is also broken into two different versions, but unlike the "visit" method,
   # there is no method that involves navigation.  "post" simply calls a post over ajax
-  # to the url supplied.  "submit" submits the form referenced by the DOM element
-  # or jQuery object supplied over ajax.
+  # to the url supplied.  "submit" submits  over ajax the form referenced by the 
+  # DOM element or jQuery object supplied.
 
   post: (url, params = {}, callback_message = "") =>
     @_setSessionCookie()
