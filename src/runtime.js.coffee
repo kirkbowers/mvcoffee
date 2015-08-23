@@ -96,7 +96,7 @@ class MVCoffee.Runtime
     # If we didn't get anything from the server, do nothing
     if data
       if @opts.debug
-        console.log("Got data from server: " + JSON.stringify(data))
+        @log("Got data from server: " + JSON.stringify(data))
     
       # First load the model store.  This will do a check that the data format is as
       # expected and throw an exception if not.
@@ -113,7 +113,7 @@ class MVCoffee.Runtime
     
       # If a redirect was issued, that trumps calling any callbacks
       if data.redirect?
-        Turbolinks.visit(data.redirect)
+        @visit(data.redirect)
         return false
       else
         return true
@@ -337,16 +337,12 @@ class MVCoffee.Runtime
       applyClientize "form",
         "submit",
         (customization, callback) ->
-          self.log "Calling validation anon function"
           model = customization.model
-          self.log "Model = " + model
           if model?
             model.populate()
             method = "errors"
             if callback
               method = ["#{callback}_errors", "errors"]
-            self.log "Callback = " + method
-            self.log "Controller = " + customization.controller
             if customization.controller?
               self.narrowcast customization.controller, method, model.errors
           
@@ -377,7 +373,9 @@ class MVCoffee.Runtime
           if method is "post"
             self.post(element.href, {}, callback)
           else if method is "delete"
-            self.delete(element.href, callback)
+            self.delete(element.href, {}, callback)
+          else if method is "patch"
+            self.patch(element.href, {}, callback)
           else
             self.visit(element.href)
         
@@ -441,18 +439,6 @@ class MVCoffee.Runtime
   # to the url supplied.  "submit" submits  over ajax the form referenced by the 
   # DOM element or jQuery object supplied.
 
-  post: (url, params = {}, callback_message = "") =>
-    @_setSessionCookie()
-    self = this
-    jQuery.ajax(
-      url: url,
-      data: params,
-      type: 'POST',
-      success: (data) =>
-        self.processServerData(data, callback_message)
-      dataType: "json"
-    )
-
   submit: (submitee, callback_message = "") =>
     @_setSessionCookie()
     element = submitee
@@ -466,18 +452,27 @@ class MVCoffee.Runtime
       'json')
     false
 
-  delete: (url, callback_message = "") =>
+  post: (url, params = {}, callback_message = "") =>
+    @_ajaxWithClientize "POST", url, params, callback_message
+
+  delete: (url, params = {}, callback_message = "") =>
+    @_ajaxWithClientize "DELETE", url, params, callback_message
+
+  patch: (url, params = {}, callback_message = "") =>
+    @_ajaxWithClientize "PATCH", url, params, callback_message
+
+  _ajaxWithClientize: (type, url, params, callback_message) =>
     @_setSessionCookie()
     self = this
     jQuery.ajax(
       url: url,
-      type: 'DELETE',
+      data: params,
+      type: type,
       success: (data) =>
         self.processServerData(data, callback_message)
       dataType: "json"
     )
-
-
+  
 
   #---------------------------------------------------------------------------
   # "run" starts the whole runtime.  

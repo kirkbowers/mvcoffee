@@ -36,6 +36,7 @@ class MVCoffee.Controller
     @fetch = @_runtime.fetch
     @post = @_runtime.post
     @delete = @_runtime.delete
+    @patch = @_runtime.patch
     @submit = @_runtime.submit
     
     @timerCount = 0
