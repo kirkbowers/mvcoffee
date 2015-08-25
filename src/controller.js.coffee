@@ -39,6 +39,8 @@ class MVCoffee.Controller
     @patch = @_runtime.patch
     @submit = @_runtime.submit
     
+    @log = @_runtime.log
+    
     @timerCount = 0
 
   #==================================================================================

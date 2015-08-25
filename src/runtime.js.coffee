@@ -113,7 +113,7 @@ class MVCoffee.Runtime
     
       # If a redirect was issued, that trumps calling any callbacks
       if data.redirect?
-        @visit(data.redirect)
+        @redirect(data.redirect)
         return false
       else
         return true
@@ -422,6 +422,10 @@ class MVCoffee.Runtime
   visit: (url) =>
     # We're recycling the flash here because it should only persist through a redirect.
     @_recycleFlash()
+    @_setSessionCookie()
+    Turbolinks.visit url
+
+  redirect: (url) =>
     @_setSessionCookie()
     Turbolinks.visit url
 
