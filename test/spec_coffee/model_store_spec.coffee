@@ -205,6 +205,26 @@ describe "ModelStore loading records and querying", ->
     expect(result[1] instanceof MockModel).toBeTruthy()
     expect(result[1].id).toBe(3)
     
+  it "trumps a model load with a delete", ->
+    store.load(
+      mvcoffee_version: "1.0.0"
+      models:
+        mock_model:
+          data:
+            id: 2
+            name: "Two"
+            foreign_id: 11            
+          delete: [2]
+    )
+    
+    result = store.all("mock_model")
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(2)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(3)
+    
   it "replaces on a foreign key", ->
     store.load(
       mvcoffee_version: "1.0.0"

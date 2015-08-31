@@ -17,6 +17,7 @@ class MVCoffee.Model
   _associations_has_many: []
   
   errors: []
+  errorsForField: {}
   valid: true
 
   #----------------------------------------------------------------------------
@@ -260,6 +261,7 @@ class MVCoffee.Model
   validate: ->
     @valid  = true
     @errors = []
+    @errorsForField = {}
     for field in @fields
       if field.validates?
         # First see if the validation is an object or an array.  This is a notational
@@ -587,8 +589,12 @@ class MVCoffee.Model
     # and it has a message, that wins.  Next is the message on the validation, then
     # the fallback is the default message passed as the fourth param.
     if subval?.message?
-      @errors.push("#{name} #{subval.message}")      
+      errorMessage = "#{name} #{subval.message}"     
     else if validation?.message?
-      @errors.push("#{name} #{validation.message}")
+      errorMessage = "#{name} #{validation.message}"
     else
-      @errors.push("#{name} #{message}")
+      errorMessage = "#{name} #{message}"
+      
+    @errors.push errorMessage
+    @errorsForField[field.name] ?= []
+    @errorsForField[field.name].push errorMessage
