@@ -3,16 +3,20 @@ MVCoffee = require("../lib/mvcoffee")
 theUser = class User extends MVCoffee.Model
 
 theUser.hasMany "activity"
-
+theUser.hasOne "brain"
 
 theActivity = class Activity extends MVCoffee.Model
 
 theActivity.belongsTo "user"
 
+theBrain = class Brain extends MVCoffee.Model
+
+theBrain.belongsTo "user"
 
 store = new MVCoffee.ModelStore
   user: User
   activity: Activity
+  brain: Brain
   
 store.load
   mvcoffee_version: "1.0.0"
@@ -41,6 +45,12 @@ store.load
         name: "Wash the cat"
         position: 1
         user_id: 2
+      ]
+    brain:
+      data: [
+        id: 1
+        name: "gray matter"
+        user_id: 1
       ]
   
 describe "model macro methods for relationships", ->
@@ -92,3 +102,16 @@ describe "model macro methods for relationships", ->
     expect(activities[0].id).toBe(1)
     expect(activities[1].id).toBe(2)
   
+  it "should define a brain method on User", ->
+    user = new User() 
+    expect(user.brain instanceof Function).toBeTruthy()
+
+  it "should define a user method on Brain", ->
+    brain = new Brain()
+    expect(brain.user instanceof Function).toBeTruthy()
+
+  it "should find a brain for a user", ->
+    user = User.find(1)
+    brain = user.brain()
+    expect(brain instanceof Object).toBeTruthy()
+    expect(brain.name).toBe("gray matter")

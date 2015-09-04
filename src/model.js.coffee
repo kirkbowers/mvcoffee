@@ -212,6 +212,32 @@ class MVCoffee.Model
     
   @has_many: @hasMany
   
+  # This is almost a direct copy from hasMany.  Not DRY.  Can probably clean it up,
+  # but I want to see if it works first.
+  @hasOne: (name, options = {}) ->
+    methodName = options.as || name
+    
+    # Place this on the array of has many associations
+    @prototype._associations_has_many = [] unless @prototype.hasOwnProperty("_associations_has_many")
+    @prototype._associations_has_many.push methodName
+    
+    # Stash this reference, because "this" is about to change
+    self = this
+    @prototype[methodName] = ->
+      modelStore = self.prototype.modelStore
+      foreignKey = options.foreignKey || options.foreign_key || "#{self.prototype.modelName}_id"
+      
+      # @ now refers to the object "this", not the static class "this"
+      result = null
+      if modelStore?
+        constraints = {}
+        constraints[foreignKey] = @id
+        result = modelStore.findBy(name, constraints)
+
+      result
+
+  @has_one: @hasOne
+  
   @belongsTo: (name, options = {}) ->
     methodName = options.as || name
     foreignKey = options.foreignKey || options.foreign_key || "#{name}_id"
