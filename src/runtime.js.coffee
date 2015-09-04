@@ -411,6 +411,7 @@ class MVCoffee.Runtime
     expiration = new Date()
     expiration.setTime(expiration.getTime() + 2000)
     document.cookie = "mvcoffee_session=#{params}; expires=#{expiration}"
+    @log "Sending client session " + params
                   
                   
   # There is no "get" method.  Instead the functionality of "get" is provided by two
