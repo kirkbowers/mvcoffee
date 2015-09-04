@@ -73,7 +73,13 @@ class MVCoffee.ModelStore
             toBeRemoved = @where(modelName, commands.replace_on)
 
           for record in toBeRemoved
-            @_delete_with_cascade modelName, record.id
+            # @_delete_with_cascade modelName, record.id
+            # I have no idea why this used to be delete with cascade!
+            # It totally breaks caching!!!
+            # Let's try it without...
+            # I'm going to assume that any orphaned child records will get wiped out
+            # when the system realizes the child data is out of date.
+            @delete modelName, record.id
 
     for modelName, commands of object.models
       if @modelDefs[modelName]?

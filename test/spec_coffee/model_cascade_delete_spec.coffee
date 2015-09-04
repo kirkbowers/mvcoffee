@@ -115,13 +115,17 @@ describe "models with hierarchical data", ->
     expect(Activity.all().length).toBe(0)
     expect(Subactivity.all().length).toBe(0)
    
-  it "should cascade a delete when done by a load on the store using replace_on", ->
+  it "should not cascade a delete when done by a load on the store using replace_on", ->
     store.load
       mvcoffee_version: "1.0.0"
       models:
         activity:
           data: [
             id: 2
+            user_id: 2
+            name: "Make a nice sandwich"
+          ,
+            id: 3
             user_id: 2
             name: "Make spaghetti"
           ]
@@ -135,11 +139,14 @@ describe "models with hierarchical data", ->
     user = User.find 2
     expect(user.name).toBe("Sue")
     activities = user.activities()
-    expect(activities.length).toBe(1)
+    expect(activities.length).toBe(2)
     act = activities[0]
+    expect(act.name).toBe("Make a nice sandwich")
+    expect(act.subactivities().length).toBe(2)
+    expect(Subactivity.all().length).toBe(2)
+    act = activities[1]
     expect(act.name).toBe("Make spaghetti")
     expect(act.subactivities().length).toBe(0)
-    expect(Subactivity.all().length).toBe(0)
     
  
     
