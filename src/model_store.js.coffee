@@ -90,6 +90,11 @@ class MVCoffee.ModelStore
             @_delete_with_cascade modelName, commands.delete
 
       
+  # save stores the given object into the data store, overwriting any existing
+  # matching record
+  save: (modelName, modelObj) ->
+    @store[modelName]?[modelObj.id] = modelObj
+      
   # find finds the one record that is of the model supplied and has the id supplied
   find: (model, id) ->
     @store[model]?[id]

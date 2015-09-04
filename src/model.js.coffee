@@ -71,6 +71,16 @@ class MVCoffee.Model
   #----------------------------------------------------------------------------
   # Instance methods for CRUD-type stuff
   
+  save: ->
+    if @validate()
+      @modelStore.save(@modelName, this)
+    @valid
+    
+  # Does not do validation.  Saves unconditionally.
+  saveAlways: ->
+    @modelStore.save(@modelName, this)
+  
+  
   delete: ->
     # Recursively delete all dependent children
     for assoc in @_associations_has_many
