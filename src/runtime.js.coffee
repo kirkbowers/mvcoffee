@@ -64,7 +64,7 @@ class MVCoffee.Runtime
       messages = [messages]
       
     for controller in @active
-      @narrowcast controller, messages, args
+      @narrowcast controller, messages, args...
 
 
       
