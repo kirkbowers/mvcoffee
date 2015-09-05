@@ -354,7 +354,16 @@ class MVCoffee.Runtime
         , 
         (element, callback) ->
           if element.method is "get" or element.method is "GET"
-            self.visit element.action
+            # If this is a get form, like look up a order number, we need to pass
+            # the form fields on the URL.
+            params = jQuery.params(jQuery(element).serialize())
+            url = element.action
+            if /\?/.test url
+              url += '+' + params
+            else
+              url += '?' + params
+              
+            self.visit url
           else            
             self.submit element, callback
             
