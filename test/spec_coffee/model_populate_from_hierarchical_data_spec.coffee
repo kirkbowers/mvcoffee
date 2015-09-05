@@ -3,7 +3,7 @@ MVCoffee = require("../lib/mvcoffee")
 theUser = class User extends MVCoffee.Model
 
 theUser.hasMany "activity", order: "position"
-
+theUser.hasOne "brain"
 
 theActivity = class Activity extends MVCoffee.Model
 
@@ -16,10 +16,17 @@ theSubActivity = class Subactivity extends MVCoffee.Model
 theSubActivity.belongsTo "activity"
 
 
+
+theBrain = class Brain extends MVCoffee.Model
+
+theBrain.belongsTo "user"
+
+
 store = new MVCoffee.ModelStore
   user: User
   activity: Activity
   subactivity: Subactivity
+  brain: Brain
   
 store.load
   mvcoffee_version: "1.0.0"
@@ -49,6 +56,14 @@ store.load
             name: "Spread jelly"
           ]
         ]
+      ,
+        id: 3
+        name: "Danny"
+        brain: [
+          id: 1
+          user_id: 3
+          name: "gray matter"
+        ]
       ]
       
 describe "models with hierarchical data", ->
@@ -56,6 +71,7 @@ describe "models with hierarchical data", ->
     user = User.find(1)
     expect(user.name).toBe("Bob")
     expect(user.activities().length).toBe(0)
+    expect(user.brain()).toBeFalsy()
     
   it "should find a model that has many things", ->
     user = User.find(2)
@@ -71,4 +87,12 @@ describe "models with hierarchical data", ->
     expect(subs.length).toBe(2)
     expect(subs[0].name).toBe("Spread peanut butter")
     expect(subs[1].name).toBe("Spread jelly")
+    expect(user.brain()).toBeFalsy()
+
+  it "should find a model that has one thing", ->
+    user = User.find(3)
+    expect(user.name).toBe("Danny")
+    expect(user.activities().length).toBe(0)
+    expect(user.brain().name).toEqual("gray matter")
+    
 

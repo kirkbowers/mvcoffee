@@ -14,7 +14,7 @@ class MVCoffee.Model
   fields: []
   
   # This is a pseudo-private property that lists all has many associations
-  _associations_has_many: []
+  _associations_children: []
   
   errors: []
   errorsForField: {}
@@ -83,10 +83,13 @@ class MVCoffee.Model
   
   delete: ->
     # Recursively delete all dependent children
-    for assoc in @_associations_has_many
+    for assoc in @_associations_children
       children = @[assoc]()
-      for child in children
-        child.delete()
+      if Array.isArray(children)
+        for child in children
+          child.delete()
+      else
+        children?.delete()
   
     @modelStore.delete(@modelName, @id)
   
@@ -190,8 +193,8 @@ class MVCoffee.Model
     methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
     
     # Place this on the array of has many associations
-    @prototype._associations_has_many = [] unless @prototype.hasOwnProperty("_associations_has_many")
-    @prototype._associations_has_many.push methodName
+    @prototype._associations_children = [] unless @prototype.hasOwnProperty("_associations_children")
+    @prototype._associations_children.push methodName
     
     # Stash this reference, because "this" is about to change
     self = this
@@ -218,8 +221,8 @@ class MVCoffee.Model
     methodName = options.as || name
     
     # Place this on the array of has many associations
-    @prototype._associations_has_many = [] unless @prototype.hasOwnProperty("_associations_has_many")
-    @prototype._associations_has_many.push methodName
+    @prototype._associations_children = [] unless @prototype.hasOwnProperty("_associations_children")
+    @prototype._associations_children.push methodName
     
     # Stash this reference, because "this" is about to change
     self = this

@@ -3,6 +3,7 @@ MVCoffee = require("../lib/mvcoffee")
 theUser = class User extends MVCoffee.Model
 
 theUser.hasMany "activity", order: "position"
+theUser.hasOne "brain"
 
 
 theActivity = class Activity extends MVCoffee.Model
@@ -15,6 +16,11 @@ theSubActivity = class Subactivity extends MVCoffee.Model
 
 theSubActivity.belongsTo "activity"
 
+
+theBrain = class Brain extends MVCoffee.Model
+
+theBrain.belongsTo "user"
+
 store = null
       
 describe "models with hierarchical data", ->
@@ -23,6 +29,7 @@ describe "models with hierarchical data", ->
       user: User
       activity: Activity
       subactivity: Subactivity
+      brain: Brain
   
     store.load
       mvcoffee_version: "1.0.0"
@@ -52,13 +59,21 @@ describe "models with hierarchical data", ->
                 name: "Spread jelly"
               ]
             ]
-          ]
+          ,
+            id: 3
+            name: "Danny"
+            brain: [
+              id: 1
+              user_id: 3
+              name: "gray matter"
+            ]
+          ]        
 
 
   it "should delete a model that has no has many things and leave others untouched", ->
     user = User.find 1
     user.delete()
-    expect(User.all().length).toBe(1)
+    expect(User.all().length).toBe(2)
     expect(User.find(1)).toBeUndefined()
     user = User.find 2
     expect(user.name).toBe("Sue")
@@ -70,7 +85,7 @@ describe "models with hierarchical data", ->
   it "should cascade a delete on a model that has many children", ->
     user = User.find 2
     user.delete()
-    expect(User.all().length).toBe(1)
+    expect(User.all().length).toBe(2)
     expect(User.find(2)).toBeUndefined()
     user = User.find 1
     expect(user.name).toBe("Bob")
@@ -81,7 +96,7 @@ describe "models with hierarchical data", ->
   it "should cascade a delete on a model that has many children using destroy alias", ->
     user = User.find 2
     user.destroy()
-    expect(User.all().length).toBe(1)
+    expect(User.all().length).toBe(2)
     expect(User.find(2)).toBeUndefined()
     user = User.find 1
     expect(user.name).toBe("Bob")
@@ -96,7 +111,7 @@ describe "models with hierarchical data", ->
         user:
           delete: 2
           
-    expect(User.all().length).toBe(1)
+    expect(User.all().length).toBe(2)
     expect(User.find(2)).toBeUndefined()
     user = User.find 1
     expect(user.name).toBe("Bob")
@@ -109,11 +124,12 @@ describe "models with hierarchical data", ->
       mvcoffee_version: "1.0.0"
       models:
         user:
-          delete: [1, 2]
+          delete: [1, 2, 3]
           
     expect(User.all().length).toBe(0)
     expect(Activity.all().length).toBe(0)
     expect(Subactivity.all().length).toBe(0)
+    expect(Brain.all().length).toBe(0)
    
   it "should not cascade a delete when done by a load on the store using replace_on", ->
     store.load
@@ -132,7 +148,7 @@ describe "models with hierarchical data", ->
           replace_on:
             user_id: 2
           
-    expect(User.all().length).toBe(2)
+    expect(User.all().length).toBe(3)
     user = User.find 1
     expect(user.name).toBe("Bob")
     expect(user.activities().length).toBe(0)
