@@ -10,6 +10,7 @@ class MVCoffee.Runtime
     @controllers = {}
     @modelStore = new MVCoffee.ModelStore
     @active = []
+    @listeners = []
     @_flash = {}
     @_oldFlash = {}
     @_clientizeCustomizations = []
@@ -36,6 +37,10 @@ class MVCoffee.Runtime
     else
       # This is here for backwards compatibility with v0.1
       @controllers[contr.selector] = contr
+
+  register_listeners: (args...) ->
+    for listenerClass in args
+      @listeners.push new listenerClass(this)
 
   register_models: (models) ->
     @modelStore.register_models(models)
@@ -66,6 +71,8 @@ class MVCoffee.Runtime
     for controller in @active
       @narrowcast controller, messages, args...
 
+    for listener in @listeners
+      @narrowcast listener, messages, args...
 
       
   _recycleFlash: ->
