@@ -2,7 +2,7 @@
 class MVCoffee.Model
   constructor: (obj)->
     if obj?
-      @populate(obj)
+      @update(obj)
 
   # This must be overridden in subclasses to give the name of the model in rails land
   # Leave it as null if the form is built with form_tag instead of a form_for built on
@@ -71,15 +71,29 @@ class MVCoffee.Model
   #----------------------------------------------------------------------------
   # Instance methods for CRUD-type stuff
   
+  # If the model is valid, save will return model being saved.  If not, it will return
+  # undefined.  In other words, the return value will be truthy if the model was valid
+  # and the save succeeded.
   save: ->
     if @validate()
       @modelStore.save(@modelName, this)
-    @valid
-    
-  # Does not do validation.  Saves unconditionally.
-  saveAlways: ->
+
+  # Store unconditionally saves the model and returns it.
+  store: ->
     @modelStore.save(@modelName, this)
   
+  update: (obj) ->
+    for own field, value of obj
+      # Only do the recursive loading of models into the model store on complex
+      # child data if the model store "knows about" a model with this name
+      # otherwise it's just arbitrary data (like an array of numbers, not an array
+      # of model objects)
+      if (value instanceof Object or value instanceof Array) and @modelStore.knowsAbout field
+        
+        @modelStore.load_model_data(field, value)
+      else
+        this[field] = value
+
   
   delete: ->
     # Recursively delete all dependent children
@@ -96,6 +110,10 @@ class MVCoffee.Model
   # Just a rails like alias
   destroy: ->
     @delete()
+
+  # Remove without a cascade    
+  remove: ->
+    @modelStore.remove(@modelName, @id)
   
   #----------------------------------------------------------------------------
   # Macro method definitions
@@ -185,6 +203,9 @@ class MVCoffee.Model
       fields[index].display = display   
   
 
+  # TODO: Add through: option for join tables
+  
+
   # I really debated on the name of this.  I think camel case is the norm in js land
   # but snake case is the norm in ruby for method names.  This method is modeled after
   # the has_many method in rails.  The best I could think to do was provide both, one
@@ -269,18 +290,7 @@ class MVCoffee.Model
     if obj?
       # If we are passed an object, copy it, merging its properties into ours
       # (overwriting ours if a property already exists)
-      for field, value of obj
-        # Probably unnecessary safeguard, but js objects can be wonky.
-        if obj.hasOwnProperty(field)
-          # Only do the recursive loading of models into the model store on complex
-          # child data if the model store "knows about" a model with this name
-          # otherwise it's just arbitrary data (like an array of numbers, not an array
-          # of model objects)
-          if (value instanceof Object or value instanceof Array) and @modelStore.knowsAbout field
-            
-            @modelStore.load_model_data(field, value)
-          else
-            this[field] = value
+      @update obj
     else
       # Otherwise, if this method was called with no argument, populate from the
       # form on the page using jquery

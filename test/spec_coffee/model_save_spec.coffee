@@ -23,8 +23,11 @@ describe "using the model save method", ->
       id: 1
       name: "Someone" 
     
+    # The model store shouldn't know about this unsaved model yet
+    expect(User.all().length).toEqual(0)
     result = user.save()
     expect(result).toBeTruthy()
+    expect(result).toEqual(user)
 
     users = User.all()
     expect(users.length).toEqual(1)
@@ -40,11 +43,12 @@ describe "using the model save method", ->
     users = User.all()
     expect(users.length).toEqual(0)
     
-  it "should saveAlways an invalid model anyway", ->
+  it "should always store an invalid model anyway", ->
     user = new User
       id: 1
     
-    result = user.saveAlways()
+    result = user.store()
+    expect(result).toEqual(user)
 
     users = User.all()
     expect(users.length).toEqual(1)

@@ -79,7 +79,7 @@ class MVCoffee.ModelStore
             # Let's try it without...
             # I'm going to assume that any orphaned child records will get wiped out
             # when the system realizes the child data is out of date.
-            @delete modelName, record.id
+            @remove modelName, record.id
 
     for modelName, commands of object.models
       if @modelDefs[modelName]?
@@ -143,6 +143,10 @@ class MVCoffee.ModelStore
   # has_many relationship.  It is up to the model to cascade deletes.
   delete: (model, id) ->
     delete @store[model][id]
+    
+  remove: (model, id) ->
+    delete @store[model][id]
+    
 
   # Quasi-private method for deferring a deletion to the model being destroyed.  This
   # allows the model to perform a cascading delete on any has_many children.

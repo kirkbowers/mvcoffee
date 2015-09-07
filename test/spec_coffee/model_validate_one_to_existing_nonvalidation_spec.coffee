@@ -22,6 +22,7 @@ describe "the validates macro adds a validation to a field declared statically w
   
   it "should validate numericality of the quantity property", ->
     user = new User(quantity: -1)
+    user.validate()
     expect(user.errors.length).toBe(1)
     expect(user.errors[0]).toBe("number of things must be freakin' positive, yo")
 
