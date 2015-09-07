@@ -203,9 +203,6 @@ class MVCoffee.Model
       fields[index].display = display   
   
 
-  # TODO: Add through: option for join tables
-  
-
   # I really debated on the name of this.  I think camel case is the norm in js land
   # but snake case is the norm in ruby for method names.  This method is modeled after
   # the has_many method in rails.  The best I could think to do was provide both, one
@@ -228,7 +225,14 @@ class MVCoffee.Model
       if modelStore?
         constraints = {}
         constraints[foreignKey] = @id
-        result = modelStore.where(name, constraints)
+        if options.through
+          joinTable = options.through
+          joins = modelStore.where(joinTable, constraints)
+          for join in joins
+            record = modelStore.find(name, join["#{name}_id"])
+            result.push record if record
+        else
+          result = modelStore.where(name, constraints)
         
       if options.order
         result = self.order(result, options.order)
