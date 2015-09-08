@@ -48,10 +48,10 @@ class MVCoffee.Model
         0
     result
   
-  @all: (options = {})->
+  @all: (options = {}) ->
     result = @prototype.modelStore.all(@prototype.modelName)
     if options.order
-      result = @sort(result, options.order)
+      result = @order(result, options.order)
     result
     
   @find: (id) ->
