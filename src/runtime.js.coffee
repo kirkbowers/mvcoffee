@@ -161,9 +161,6 @@ class MVCoffee.Runtime
     if token?.length
       @authenticity_token = token.attr("content");
       
-    # Clear the session cookie
-    document.cookie = "mvcoffee_session="
-
     @_recycleFlash()
   
     # Reset the clientize customizations before we start this pages controllers.
@@ -426,7 +423,7 @@ class MVCoffee.Runtime
     params = jQuery.param(@session)
     expiration = new Date()
     expiration.setTime(expiration.getTime() + 1000)
-    cookie = "mvcoffee_session=#{params}; expires=#{expiration}; path=/"
+    cookie = "mvcoffee_session=#{params}; path=/; expires=#{expiration.toGMTString()}"
     document.cookie = cookie
     @log "Sending cookie = " + cookie
                   
