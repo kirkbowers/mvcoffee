@@ -425,10 +425,10 @@ class MVCoffee.Runtime
   _setSessionCookie: ->
     params = jQuery.param(@session)
     expiration = new Date()
-    expiration.setTime(expiration.getTime() + 2000)
-    document.cookie = "mvcoffee_session=#{params}; expires=#{expiration}"
-    @log "Sending client session " + params
-                  
+    expiration.setTime(expiration.getTime() + 1000)
+    cookie = "mvcoffee_session=#{params}; expires=#{expiration}; path=/"
+    document.cookie = cookie
+    @log "Sending cookie = " + cookie
                   
   # There is no "get" method.  Instead the functionality of "get" is provided by two
   # different methods, visit and fetch.  "visit" is a "get" over regular html, meaning
