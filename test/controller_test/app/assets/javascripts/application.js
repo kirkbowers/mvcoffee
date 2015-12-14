@@ -16,9 +16,10 @@
 //= require turbolinks
 //= require mvcoffee
 //= require_self
+//= require plurals
 //= require_directory ./models
 //= require_directory ./controllers
-//= require manager
+//= require runtime
 
 // Set up a namespace for the test controllers
 // It has to be done on the "this" object since sprockets runs each file in an

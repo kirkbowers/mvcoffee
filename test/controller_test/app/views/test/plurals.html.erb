@@ -1,0 +1,13 @@
+<% content_for :body_id do %>
+  id="plurals_page"
+<% end %>
+
+<h2>Pluralizer Test</h2>
+
+<p>This test doesn't do much except prove that a has_many association can be created with an irregular plural.  It warrants verifying because of a couple things:  CoffeeScript files are all run within an anonymous function to protect against namespace pollution, and the order in which files will be included by sprockets and executed should not be counted on.  Does a custom pluralization make it through the anon function scope?  Is it guaranteed to be performed before it is needed?</p>
+<p>If this test succeeds, we should see the names of a couple of cactus types below:</p>
+
+<p id="desert_name"></p>
+
+<ul id="cacti"></ul>
+

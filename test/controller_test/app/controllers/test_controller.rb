@@ -16,4 +16,8 @@ class TestController < ApplicationController
 
   def no_refresh
   end
+  
+  def plurals
+    render layout: 'application'
+  end
 end

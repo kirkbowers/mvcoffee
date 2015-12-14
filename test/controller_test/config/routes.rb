@@ -13,6 +13,9 @@ ControllerTest::Application.routes.draw do
   get "test/override_timer"
   get "test/no_timer"
   get "test/no_refresh"
+  
+  get "plurals" => "test#plurals"
+  
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 

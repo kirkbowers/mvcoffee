@@ -5,6 +5,10 @@ runtime = new MVCoffee.Runtime
   debug: true
   clientizeScope: "#clientize_scope"
 
+runtime.register_models
+  desert: ControllerTest.Desert
+  cactus: ControllerTest.Cactus
+
 runtime.register_controllers
   default_timer_page: ControllerTest.DefaultTimerController
   override_timer_page: ControllerTest.OverrideTimerController
@@ -12,5 +16,6 @@ runtime.register_controllers
   no_refresh_page: ControllerTest.NoRefreshController
   timer: ControllerTest.TimeRefreshController
   form_page: ControllerTest.FormController
+  plurals_page: ControllerTest.PluralsController
 
 runtime.run()
