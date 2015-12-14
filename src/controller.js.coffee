@@ -57,8 +57,45 @@ class MVCoffee.Controller
     customization.controller = this
     @_runtime.addClientizeCustomization customization  
   
-
+  #==================================================================================
+  #
+  # Rerendering convenience method
+  #
+  # Rerending a portion of the screen is such a common thing to do that it ought to be
+  # easy.  There's always the same 3 steps:
+  # - Clear the section of the screen to be rerendered
+  # - Apply a JST template to that section of the screen
+  # - Reclientize that section
+  #
+  # So, here's what we need to make all that happen:
+  #   element or selector of section of screen to rerender
+  #   the path to the template to use
+  #   a hash of locals for the template
+  #   (optionally) a collection and the variable name the template expects a single
+  #     item of the collection to be
   
+  rerender: (opts) ->
+    element = opts.selector ? opts.element
+    $element = jQuery(element)
+    
+    template_path = opts.template
+    locals = opts.locals ? {}
+
+    $element.empty()
+    
+    collection = opts.collection
+    if collection
+      as_var = opts.as
+      if as_var
+        for item in collection
+          locals[as_var] = item
+          $element.append(JST[template_path](locals))
+    else
+      $element.append(JST[template_path](locals))
+
+    @reclientize $element  
+    
+
   #==================================================================================
   #
   # Life cycle methods.
