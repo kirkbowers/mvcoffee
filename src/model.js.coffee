@@ -51,7 +51,10 @@ class MVCoffee.Model
   @all: (options = {}) ->
     result = @prototype.modelStore.all(@prototype.modelName)
     if options.order
-      result = @order(result, options.order)
+      # Passing in the options hash as the 3rd param sends in the "order" twice, but
+      # it's ignored by the order method.  What we really care about is passing in
+      # the ignoreCase option.
+      result = @order(result, options.order, options)
     result
     
   @find: (id) ->
