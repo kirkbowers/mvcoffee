@@ -14,6 +14,7 @@ class MVCoffee.Runtime
     @_flash = {}
     @_oldFlash = {}
     @_clientizeCustomizations = []
+    @_neverClientizeSelectors = []
     
     # This holds the current state of the session data pulled from the server
     @session = {}
@@ -395,8 +396,13 @@ class MVCoffee.Runtime
     # @log "<<< end clientize"
 
 
+  neverClientize: (args...) ->
+    for arg in args
+      @_neverClientizeSelectors.push { selector: arg, ignore: true }
+
   resetClientizeCustomizations: ->
-    @_clientizeCustomizations = []  
+    @_clientizeCustomizations = @_neverClientizeSelectors.slice() 
+    
 
   addClientizeCustomization: (customization) ->
     @_clientizeCustomizations.push customization
