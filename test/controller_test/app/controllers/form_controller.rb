@@ -76,6 +76,23 @@ class FormController < ApplicationController
       }
     end  
   end
+
+  def get_form
+    @name = params[:name]
+    @mvcoffee[:flash][:message] = "Form submitted over GET with value #{@name}"
+    
+    @extra = params[:extra]
+    if @extra
+      @mvcoffee[:flash][:message] += ", plus with extra: #{@extra}"
+    end
+    
+    respond_to do |format|
+      format.html
+      format.json { 
+        render json: @mvcoffee
+      }
+    end  
+  end
   
 private
   def prepare_mvcoffee_object

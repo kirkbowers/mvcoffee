@@ -35,8 +35,8 @@ describe "Pluralizer out of the box", ->
     expect(result).toBe("fairies")
     
   it "replaces with an irregular plural when one word snake case", ->
-    result = MVCoffee.Pluralizer.pluralize("cactus")
-    expect(result).toBe("cacti")
+    result = MVCoffee.Pluralizer.pluralize("hippopotamus")
+    expect(result).toBe("hippopotami")
 
   it "replaces with an irregular plural when several words snake case", ->
     result = MVCoffee.Pluralizer.pluralize("big_ass_mouse")

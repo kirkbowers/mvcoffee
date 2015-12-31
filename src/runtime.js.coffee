@@ -169,11 +169,11 @@ class MVCoffee.Runtime
     @resetClientizeCustomizations()
   
     # Pull the json from the page if there is some embedded
-    json = $("##{@dataId}").html()
+    json = jQuery("##{@dataId}").html()
 
     parsed = null
     if json
-      parsed = $.parseJSON(json)
+      parsed = jQuery.parseJSON(json)
     if @_preProcessServerData(parsed)  
       newActive = []
       for id, contr of @controllers
@@ -361,12 +361,13 @@ class MVCoffee.Runtime
           if element.method is "get" or element.method is "GET"
             # If this is a get form, like look up a order number, we need to pass
             # the form fields on the URL.
-            params = jQuery.params(jQuery(element).serialize())
+            params = jQuery(element).serialize()
             url = element.action
-            if /\?/.test url
-              url += '+' + params
-            else
-              url += '?' + params
+            if params
+              if /\?/.test url
+                url += '&' + params
+              else
+                url += '?' + params
               
             self.visit url
           else            
@@ -382,7 +383,7 @@ class MVCoffee.Runtime
           true
         ,
         (element, callback) ->
-          method = $(element).data('method')
+          method = jQuery(element).data('method')
           # self.log "Data method = " + method
           if method is "post"
             self.post(element.href, {}, callback)
@@ -469,7 +470,7 @@ class MVCoffee.Runtime
     if submitee instanceof jQuery
       element = submitee.get(0)
     jQuery.post(element.action,
-      $(element).serialize(),
+      jQuery(element).serialize(),
       (data) =>
         @processServerData(data, callback_message)
       ,
@@ -504,9 +505,9 @@ class MVCoffee.Runtime
   run: ->
     @log "MVCoffee runtime run"
     self = this
-    $ ->
+    jQuery ->
       self.go()
 
-    $(document).on('pagebeforeshow', ->
+    jQuery(document).on('pagebeforeshow', ->
       self.go()
     )

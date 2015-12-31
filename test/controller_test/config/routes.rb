@@ -4,6 +4,7 @@ ControllerTest::Application.routes.draw do
   post "form/post_button"
   post "form/post_button_with_redirect"
   post "form/post_form"
+  get "form/get_form"
   delete "form/delete"
   post "form/post_link"
   
