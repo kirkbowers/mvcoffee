@@ -1,11 +1,19 @@
 fs     = require 'fs'
-{exec} = require 'child_process'
-sh = require 'execSync'
+
+# I use both the idiomatic async exec where possible and the execSync when there is
+# a dependency on something completing before continuing
+{exec, execSync} = require 'child_process'
+
+# My homegrown shell command lets me run things synchronously on the command line and
+# have it spew its output on the console for viewing pleasure.
+shell = (cmd) ->
+  # This unreadable stdio business makes the output display on the console
+  execSync cmd, {stdio: [0,1,2]}
 
 appFiles = [
   'main'
   'pluralizer'
-  'controller_manager'
+  'runtime'
   'controller'
   'model_store'
   'model'
@@ -79,12 +87,12 @@ compile_specs = (callback) ->
   files = fs.readdirSync(path)
   for file in files
     result = file.replace(/\.coffee$/, ".js")
-    sh.run "coffee --compile -o test #{path}/#{file}"
+    shell "coffee --compile -o test #{path}/#{file}"
   callback() if callback?
 
 test = (callback) ->
   console.log("Compiling test model files")
-  exec 'coffee -j models.js -o test/js/coffee test/js/coffee/*.coffee', 
+  exec 'cat test/js/coffee/*.coffee | coffee --compile --stdio > test/js/coffee/models.js', 
     (err, stdout, stderr) ->
       throw err if err
       console.log stdout + stderr
@@ -153,7 +161,8 @@ task 'spec-build', 'Build the jasmine specs written in coffeescript and run them
 task 'spec', 'Run the jasmine specs', ->
   depend build, ->
     depend compile_specs, ->
-      sh.run "jasmine-node test"
+      console.log("Running jasmine tests")
+      shell "jasmine-node test"
 
   
 task 'all', 'Build project, minify and compile files needed to run QUnity tests', ->

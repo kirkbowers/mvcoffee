@@ -13,6 +13,7 @@ describe "the validates macro method adds a validation to a new field", ->
 
   it "should validate presence of the quantity property", ->
     user = new User(quantity: "")
+    user.validate()
     expect(user.errors.length).toBe(1)
 
   it "should not modify the parent class's prototype", ->

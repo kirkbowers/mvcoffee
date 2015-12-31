@@ -1,4 +1,7 @@
 class MVCoffee.Pluralizer
+  # This had once contained "cactus: cacti", but I took it out because I wanted to test
+  # having to add it manually, and really, how often are clients of this framework
+  # going to need to have a Model named "Cactus"?
   @irregulars:
     man: "men"
     woman: "women"
@@ -8,7 +11,6 @@ class MVCoffee.Pluralizer
     goose: "geese"
     datum: "data"
     alumnus: "alumni"
-    cactus: "cacti"
     hippopotamus: "hippopotami"
     
   @addIrregulars: (words) ->

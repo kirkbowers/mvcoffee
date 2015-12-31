@@ -2,7 +2,7 @@
 class MVCoffee.Model
   constructor: (obj)->
     if obj?
-      @populate(obj)
+      @update(obj)
 
   # This must be overridden in subclasses to give the name of the model in rails land
   # Leave it as null if the form is built with form_tag instead of a form_for built on
@@ -13,7 +13,11 @@ class MVCoffee.Model
   # properties
   fields: []
   
+  # This is a pseudo-private property that lists all has many associations
+  _associations_children: []
+  
   errors: []
+  errorsForField: {}
   valid: true
 
   #----------------------------------------------------------------------------
@@ -44,15 +48,76 @@ class MVCoffee.Model
         0
     result
   
-  @all: (options = {})->
+  @all: (options = {}) ->
     result = @prototype.modelStore.all(@prototype.modelName)
     if options.order
-      result = @sort(result, options.order)
+      # Passing in the options hash as the 3rd param sends in the "order" twice, but
+      # it's ignored by the order method.  What we really care about is passing in
+      # the ignoreCase option.
+      result = @order(result, options.order, options)
     result
     
   @find: (id) ->
     @prototype.modelStore.find(@prototype.modelName, id)
 
+  # findBy finds the first record of this model that match all conditions given.
+  # conditions is a hash of column names and values to match
+  @findBy: (conditions) ->
+    @prototype.modelStore.findBy(@prototype.modelName, conditions)
+      
+  # where finds all the records of this model that match all conditions given.
+  # conditions is a hash of column names and values to match
+  @where: (conditions) ->
+    @prototype.modelStore.where(@prototype.modelName, conditions)
+    
+
+  #----------------------------------------------------------------------------
+  # Instance methods for CRUD-type stuff
+  
+  # If the model is valid, save will return model being saved.  If not, it will return
+  # undefined.  In other words, the return value will be truthy if the model was valid
+  # and the save succeeded.
+  save: ->
+    if @validate()
+      @modelStore.save(@modelName, this)
+
+  # Store unconditionally saves the model and returns it.
+  store: ->
+    @modelStore.save(@modelName, this)
+  
+  update: (obj) ->
+    for own field, value of obj
+      # Only do the recursive loading of models into the model store on complex
+      # child data if the model store "knows about" a model with this name
+      # otherwise it's just arbitrary data (like an array of numbers, not an array
+      # of model objects)
+      if (value instanceof Object or value instanceof Array) and @modelStore.knowsAbout field
+        
+        @modelStore.load_model_data(field, value)
+      else
+        this[field] = value
+
+  
+  delete: ->
+    # Recursively delete all dependent children
+    for assoc in @_associations_children
+      children = @[assoc]()
+      if Array.isArray(children)
+        for child in children
+          child.delete()
+      else
+        children?.delete()
+  
+    @modelStore.delete(@modelName, @id)
+  
+  # Just a rails like alias
+  destroy: ->
+    @delete()
+
+  # Remove without a cascade    
+  remove: ->
+    @modelStore.remove(@modelName, @id)
+  
   #----------------------------------------------------------------------------
   # Macro method definitions
 
@@ -147,6 +212,11 @@ class MVCoffee.Model
   # as sort of an alias to the other.
   @hasMany: (name, options = {}) ->
     methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
+    
+    # Place this on the array of has many associations
+    @prototype._associations_children = [] unless @prototype.hasOwnProperty("_associations_children")
+    @prototype._associations_children.push methodName
+    
     # Stash this reference, because "this" is about to change
     self = this
     @prototype[methodName] = ->
@@ -158,13 +228,46 @@ class MVCoffee.Model
       if modelStore?
         constraints = {}
         constraints[foreignKey] = @id
-        result = modelStore.where(name, constraints)
+        if options.through
+          joinTable = options.through
+          joins = modelStore.where(joinTable, constraints)
+          for join in joins
+            record = modelStore.find(name, join["#{name}_id"])
+            result.push record if record
+        else
+          result = modelStore.where(name, constraints)
         
       if options.order
         result = self.order(result, options.order)
       result
     
   @has_many: @hasMany
+  
+  # This is almost a direct copy from hasMany.  Not DRY.  Can probably clean it up,
+  # but I want to see if it works first.
+  @hasOne: (name, options = {}) ->
+    methodName = options.as || name
+    
+    # Place this on the array of has many associations
+    @prototype._associations_children = [] unless @prototype.hasOwnProperty("_associations_children")
+    @prototype._associations_children.push methodName
+    
+    # Stash this reference, because "this" is about to change
+    self = this
+    @prototype[methodName] = ->
+      modelStore = self.prototype.modelStore
+      foreignKey = options.foreignKey || options.foreign_key || "#{self.prototype.modelName}_id"
+      
+      # @ now refers to the object "this", not the static class "this"
+      result = null
+      if modelStore?
+        constraints = {}
+        constraints[foreignKey] = @id
+        result = modelStore.findBy(name, constraints)
+
+      result
+
+  @has_one: @hasOne
   
   @belongsTo: (name, options = {}) ->
     methodName = options.as || name
@@ -194,10 +297,7 @@ class MVCoffee.Model
     if obj?
       # If we are passed an object, copy it, merging its properties into ours
       # (overwriting ours if a property already exists)
-      for field of obj
-        # Probably unnecessary safeguard, but js objects can be wonky.
-        if obj.hasOwnProperty(field)
-          this[field] = obj[field]
+      @update obj
     else
       # Otherwise, if this method was called with no argument, populate from the
       # form on the page using jquery
@@ -217,6 +317,7 @@ class MVCoffee.Model
   validate: ->
     @valid  = true
     @errors = []
+    @errorsForField = {}
     for field in @fields
       if field.validates?
         # First see if the validation is an object or an array.  This is a notational
@@ -544,8 +645,12 @@ class MVCoffee.Model
     # and it has a message, that wins.  Next is the message on the validation, then
     # the fallback is the default message passed as the fourth param.
     if subval?.message?
-      @errors.push("#{name} #{subval.message}")      
+      errorMessage = "#{name} #{subval.message}"     
     else if validation?.message?
-      @errors.push("#{name} #{validation.message}")
+      errorMessage = "#{name} #{validation.message}"
     else
-      @errors.push("#{name} #{message}")
+      errorMessage = "#{name} #{message}"
+      
+    @errors.push errorMessage
+    @errorsForField[field.name] ?= []
+    @errorsForField[field.name].push errorMessage

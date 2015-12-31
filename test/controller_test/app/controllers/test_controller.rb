@@ -1,6 +1,10 @@
 class TestController < ApplicationController
   layout 'test'
 
+  def index
+    render layout: 'application'
+  end
+
   def default_timer
   end
 
@@ -11,5 +15,9 @@ class TestController < ApplicationController
   end
 
   def no_refresh
+  end
+  
+  def plurals
+    render layout: 'application'
   end
 end

@@ -47,48 +47,35 @@ describe "ModelStore initialization and loading", ->
     model = new MockWithName()
     expect(model.modelNamePlural).toBe("somethings_irregular")
     
-  it "passes unrecognized properties through unmodified", ->
-    data = { foo: 3 }
-    result = store.load data
-    expect(result).toEqual(data)
-
-  it "merges unrecognized properties with defaults supplied", ->
-    data = { foo: 3 }
-    defaults = { blah: 4 }
-    result = store.load data, defaults
-    expect(result).toEqual({ foo: 3, blah: 4 })
-
-  it "overwrites matching default properties", ->
-    data = { foo: "changed" }
-    defaults = { foo: "original" }
-    result = store.load data, defaults
-    expect(result).toEqual(data)
-
   it "converts recognized property as an object to a model", ->
     data =
+      mvcoffee_version: "1.0.0"
       models:
         mock_model:
-          id: 1
-          name: "The First"
-    result = store.load data
-    mock_model = result.models.mock_model
+          data:
+            id: 1
+            name: "The First"
+    store.load data
+    mock_model = store.find("mock_model", 1)
     expect(mock_model instanceof MockModel).toBe(true)
     expect(mock_model.id).toBe(1)
     expect(mock_model.name).toBe("The First")
       
   it "converts recognized property as an array to an array of models", ->
     data =
+      mvcoffee_version: "1.0.0"
       models:
-        mock_model: [
-          id: 1
-          name: "The First"
-        ,
-          id: 2
-          name: "What's on second"
-        ]
+        mock_model:
+          data: [
+            id: 1
+            name: "The First"
+          ,
+            id: 2
+            name: "What's on second"
+          ]
       
-    result = store.load data
-    mock_model = result.models.mock_model
+    store.load data
+    mock_model = store.all("mock_model")
     expect(mock_model instanceof Array).toBe(true)
     expect(mock_model.length).toBe(2)
     expect(mock_model[0] instanceof MockModel).toBe(true)
@@ -107,23 +94,25 @@ describe "ModelStore loading records and querying", ->
       mock_model: MockModel
       
     data =
+      mvcoffee_version: "1.0.0"
       models:
-        mock_model: [
-          id: 1
-          name: "One"
-          foreign_id: 11
-        ,
-          id: 2
-          name: "Two"
-          foreign_id: 11
-        ,
-          id: 3
-          name: "Three"
-          foreign_id: 42
-        ]
+        mock_model:
+          data: [
+            id: 1
+            name: "One"
+            foreign_id: 11
+          ,
+            id: 2
+            name: "Two"
+            foreign_id: 11
+          ,
+            id: 3
+            name: "Three"
+            foreign_id: 42
+          ]
 
-    result = store.load data
-    mocks = result.models.mock_model
+    store.load data
+    mocks = store.all("mock_model")
       
   it "finds by id", ->
     result = store.find("mock_model", 2)
@@ -178,6 +167,17 @@ describe "ModelStore loading records and querying", ->
     expect(result instanceof Array).toBeTruthy()
     expect(result.length).toBe(0)
 
+  it "finds an array of all objects when there are no condition on where", ->
+    result = store.where("mock_model", {})
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(3)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(2)
+    expect(result[2] instanceof MockModel).toBeTruthy()
+    expect(result[2].id).toBe(3)
+
   it "finds an array of all instances with all", ->
     result = store.all("mock_model")
     expect(result instanceof Array).toBeTruthy()
@@ -191,8 +191,10 @@ describe "ModelStore loading records and querying", ->
     
   it "deletes a record", ->
     store.load(
-      deletes:
-        mock_model: [2]
+      mvcoffee_version: "1.0.0"
+      models:
+        mock_model:
+          delete: [2]
     )
     
     result = store.all("mock_model")
@@ -203,4 +205,67 @@ describe "ModelStore loading records and querying", ->
     expect(result[1] instanceof MockModel).toBeTruthy()
     expect(result[1].id).toBe(3)
     
+  it "trumps a model load with a delete", ->
+    store.load(
+      mvcoffee_version: "1.0.0"
+      models:
+        mock_model:
+          data:
+            id: 2
+            name: "Two"
+            foreign_id: 11            
+          delete: [2]
+    )
+    
+    result = store.all("mock_model")
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(2)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(3)
+    
+  it "replaces on a foreign key", ->
+    store.load(
+      mvcoffee_version: "1.0.0"
+      models:
+        mock_model: 
+          data: [
+            id: 1
+            name: "One"
+            foreign_id: 11
+          ]
+          replace_on:
+            foreign_id: 11
+    )
+    
+    result = store.all("mock_model")
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(2)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
+    expect(result[1] instanceof MockModel).toBeTruthy()
+    expect(result[1].id).toBe(3)
+    
+  it "replaces on an array of foreign keys", ->
+    store.load(
+      mvcoffee_version: "1.0.0"
+      models:
+        mock_model: 
+          data: [
+            id: 1
+            name: "One"
+            foreign_id: 11
+          ]
+          replace_on: [
+            {foreign_id: 11}
+            {foreign_id: 42}
+          ]
+    )
+    
+    result = store.all("mock_model")
+    expect(result instanceof Array).toBeTruthy()
+    expect(result.length).toBe(1)
+    expect(result[0] instanceof MockModel).toBeTruthy()
+    expect(result[0].id).toBe(1)
     

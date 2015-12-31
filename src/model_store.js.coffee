@@ -1,4 +1,6 @@
 class MVCoffee.ModelStore
+  MIN_DATA_FORMAT_VERSION: "1.0.0"
+
   constructor: (models = {}) ->
     # modelDefs holds a hash that maps a string name of a model to the constructor
     # object of that model
@@ -8,10 +10,13 @@ class MVCoffee.ModelStore
     # of that model that have been fetched keyed on their "id" property
     @store = {}
     
-    for name, classdef of models
-      @addModel name, classdef
+    @register_models models
     
-  addModel: (name, classdef) ->
+  register_models: (models = {}) ->
+    for name, classdef of models
+      @_addModel name, classdef
+    
+  _addModel: (name, classdef) ->
     @modelDefs[name] = classdef
     
     # Stash the name of this model and this model store back on the prototype of the
@@ -23,6 +28,25 @@ class MVCoffee.ModelStore
     # Initialize the store for this model
     @store[name] = {}
     
+  # Returns true if this model store "knows about" some model name, 
+  # that is if it has been registered with the model store.
+  # This is useful when loading the model store from json.  We can have hierarchical
+  # data where the children are models the store knows about, or properties can just
+  # contain complex data (an array or object) of some arbitrary data that is not to be
+  # interpreted as models to be converted into model objects.
+  knowsAbout: (name) ->
+    @store[name]?
+    
+  load_model_data: (modelName, data) ->
+    if Array.isArray data
+      for modelObj in data
+        model = new @modelDefs[modelName](modelObj)
+        @store[modelName][model.id] = model
+    else
+      model = new @modelDefs[modelName](data)
+      @store[modelName][model.id] = model
+    
+  
   # load takes an object, most likely one instantiated from json, and loads the whole
   # shebang into the datastore.  It replaces any instances that have a matching id
   # to something in the input data.
@@ -32,49 +56,50 @@ class MVCoffee.ModelStore
   # Any property that is not recognized as a registered model is passed through.
   # If the second parameter is supplied, the new models are merged into the supplied
   # object.
-  load: (data, result = {}) ->
-    for key, value of data
-      if key is "models"
-        result.models ||= {}
-        for objName, obj of value
-          if @modelDefs[objName]?
-            # This is a model we know about
-        
-            # If this is an array, we need to load each in turn
-            if Array.isArray obj
-              result.models[objName] = []
-              for modelObj in obj
-                model = new @modelDefs[objName](modelObj)
-                result.models[objName].push model
-                @store[objName][model.id] = model
-            else
-              model = new @modelDefs[objName](obj)
-              @store[objName][obj.id] = model
-              result.models[objName] = model
+  load: (object) ->
+    if not object.mvcoffee_version? or object.mvcoffee_version < @MIN_DATA_FORMAT_VERSION
+      throw "MVCoffee.DataStore requires minimum data format " + @MIN_DATA_FORMAT_VERSION
+
+    for modelName, commands of object.models
+      if @modelDefs[modelName]?
+        # This is a model we know about
+        if commands.replace_on?
+          if Array.isArray commands.replace_on
+            toBeRemoved = []
+            for foreignKeys in commands.replace_on
+              toBeRemoved = toBeRemoved.concat @where(modelName, foreignKeys)
+
           else
-            result.models[objName] = obj
-      else if key is "deletes"
-        result.deletes ||= {}
-        for objName, obj of value
-          if @modelDefs[objName]?
-            # This is a model we know about
-        
-            # If this is an array, we need to load each in turn
-            if Array.isArray obj
-              for modelId in obj
-                delete @store[objName][modelId]
-                delete result.models?[objName]?[modelId]
-            else
-              delete @store[objName][obj]
-              delete result.models?[objName]?[obj]
+            toBeRemoved = @where(modelName, commands.replace_on)
+
+          for record in toBeRemoved
+            # @_delete_with_cascade modelName, record.id
+            # I have no idea why this used to be delete with cascade!
+            # It totally breaks caching!!!
+            # Let's try it without...
+            # I'm going to assume that any orphaned child records will get wiped out
+            # when the system realizes the child data is out of date.
+            @remove modelName, record.id
+
+    for modelName, commands of object.models
+      if @modelDefs[modelName]?
+        # This is a model we know about
+        if commands.data?
+          @load_model_data(modelName, commands.data)
+              
+        if commands.delete?
+          # If this is an array, we need to load each in turn
+          if Array.isArray commands.delete
+            for modelId in commands.delete
+              @_delete_with_cascade modelName, modelId
           else
-            console.log("!!! Warning, trying to delete from unknown model #{objName} !!!")
-            # result.models[objName] = obj
-      else
-        # This isn't a model we know about, pass through
-        result[key] = value
-        
-    result
+            @_delete_with_cascade modelName, commands.delete
+
+      
+  # save stores the given object into the data store, overwriting any existing
+  # matching record
+  save: (modelName, modelObj) ->
+    @store[modelName]?[modelObj.id] = modelObj
       
   # find finds the one record that is of the model supplied and has the id supplied
   find: (model, id) ->
@@ -113,3 +138,23 @@ class MVCoffee.ModelStore
     for id, record of records
       result.push(record)
     result
+
+  # Dumbly deletes the record identified by id.  This may orphan child entities in a
+  # has_many relationship.  It is up to the model to cascade deletes.
+  delete: (model, id) ->
+    delete @store[model][id]
+    
+  remove: (model, id) ->
+    delete @store[model][id]
+    
+
+  # Quasi-private method for deferring a deletion to the model being destroyed.  This
+  # allows the model to perform a cascading delete on any has_many children.
+  # It is "private" because I don't want models ever calling this.  It would cause an
+  # infinite loop.
+  _delete_with_cascade: (model, id) ->
+    record = @store[model][id]
+    if record.delete? and record.delete instanceof Function
+      record.delete()
+    else
+      delete @store[model][id]

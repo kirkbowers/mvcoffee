@@ -2,15 +2,21 @@ ControllerTest::Application.routes.draw do
   get "form/index"
   get "form/other"
   post "form/post_button"
+  post "form/post_button_with_redirect"
   post "form/post_form"
+  get "form/get_form"
   delete "form/delete"
+  post "form/post_link"
   
-  root to: "test#default_timer"
+  root to: "test#index"
 
   get "test/default_timer"
   get "test/override_timer"
   get "test/no_timer"
   get "test/no_refresh"
+  
+  get "plurals" => "test#plurals"
+  
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 

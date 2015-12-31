@@ -8,6 +8,13 @@
 </head>
 <body <%= yield :body_id %> >
 
+<script id="mvcoffee_json" type="text/json">
+  <%= raw @mvcoffee.to_json %>
+</script>
+
+<h1><%= link_to 'MVCoffee', root_path %></h1>
+<h2><%= link_to 'Controller Test', root_path %></h2>
+
 <%= content_for?(:content) ? yield(:content) : yield %>
 
 </body>

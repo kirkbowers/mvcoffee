@@ -1,9 +1,117 @@
 class MVCoffee.Controller
-  constructor: (@id, @manager) ->
-    @selector = "#" + id
+  constructor: (@id, @_runtime) ->
+    @selector = "#" + @id
     @timerId = null
     @isActive = false
+    
+    # This is a weird javascript-ism
+    # We can set up pass through methods, but we can't do it on the prototype.
+    # We have to do it only after the object has been instantiated and we have a live
+    # reference to the object we are delegating to.
+    
+    # Yes, this is a lot of pass through methods!  The runtime provides most of the
+    # functionality, but ideally we don't call the runtime directly inside of 
+    # concrete controller subclasses.  That's why the reference to the runtime has a
+    # quasi-private name, with a leading underscore.  If you call it directly, it will
+    # look wonky in your code, so that should warn you that you'd better have a good
+    # reason and know what you are doing.
+    
+    @processServerData = @_runtime.processServerData
+    @getFlash = @_runtime.getFlash
+    @setFlash = @_runtime.setFlash
+    @getSession = @_runtime.getSession
+    @setSession = @_runtime.setSession
+    @getErrors = @_runtime.getErrors
+    
+    @broadcast = @_runtime.broadcast
+    
+    @dontClientize = @_runtime.dontClientize
+    
+    # This is named "re" to remind you that you only ever call this if you've redrawn
+    # some section of the screen in your render method.  Only call this on the scope of
+    # the area you've redrawn
+    @reclientize = @_runtime.clientize
+    
+    @visit = @_runtime.visit
+    @fetch = @_runtime.fetch
+    @post = @_runtime.post
+    @delete = @_runtime.delete
+    @patch = @_runtime.patch
+    @submit = @_runtime.submit
+    
+    @log = @_runtime.log
+    
+    @timerCount = 0
+
+  #==================================================================================
+  #
+  # Specialized pass through methods
+  #
+  # Most things that we want to delegate to the runtime we can just call the runtime
+  # method as is.  Sometimes we need to pass a reference back to the calling
+  # controller.  Ideally, clients of this framework don't need to know when, just call
+  # any method in a consistent manner and let the pass through do the right thing.
+  #
+
+  addClientizeCustomization: (customization) ->
+    customization.controller = this
+    @_runtime.addClientizeCustomization customization  
   
+  #==================================================================================
+  #
+  # Rerendering convenience method
+  #
+  # Rerending a portion of the screen is such a common thing to do that it ought to be
+  # easy.  There's always the same 3 steps:
+  # - Clear the section of the screen to be rerendered
+  # - Apply a JST template to that section of the screen
+  # - Reclientize that section
+  #
+  # So, here's what we need to make all that happen:
+  #   element or selector of section of screen to rerender
+  #   the path to the template to use
+  #   a hash of locals for the template
+  #   (optionally) a collection and the variable name the template expects a single
+  #     item of the collection to be
+  
+  rerender: (opts) ->
+    element = opts.selector ? opts.element
+    $element = jQuery(element)
+    
+    template_path = opts.template
+    locals = opts.locals ? {}
+
+    $element.empty()
+    
+    collection = opts.collection
+    if collection
+      as_var = opts.as
+      if as_var
+        for item in collection
+          locals[as_var] = item
+          $element.append(JST[template_path](locals))
+    else
+      $element.append(JST[template_path](locals))
+
+    @reclientize $element  
+    
+
+  #==================================================================================
+  #
+  # Life cycle methods.
+  # 
+  # These should never be overridden.  
+  # Each provides an entry point called on<Event> that should be overridden if you need
+  # to do something when this event is fired.  Normally, onStart is the only such 
+  # entry point you should ever need.  That, and refresh.  onResume is there for 
+  # completeness sake in case you ever need to do something unique on a resume that you
+  # wouldn't have to do on a timer-fired refresh.  I can't think of what that'd be, but
+  # it's there for those things I can't anticipate...
+  # 
+  # A warning:  onPause may not always fire.  Safari in iOS does not detect the browser
+  # losing focus.  Also, onStop may not fire in some browsers when the window is closed.
+  #
+ 
   start: ->    
     # isActive keeps track of whether we actually have the focus on this controller or
     # not.  It is used to protect against running refresh prematurely.  The window
@@ -14,26 +122,26 @@ class MVCoffee.Controller
     # the window.onfocus to fire the refresh method.
     @isActive = true
     
-    # First thing we want to do is get the authenticity token that rails supplies,
-    # just in case this is rails on the backend
-    token = jQuery("meta[name='csrf-token']")
-    if token?.length
-      @authenticity_token = token.attr("content");
-            
-        
-    
     @onStart()
+    # I don't want render to happen automatically here anymore.  I want the runtime
+    # to fire it after it's done the clientize, just in case render redraws something
+    # and needs to reclientize just that scope.
+    # @render()
         
     if @refresh?
       @startTimer()
        
   resume: ->
+    @onResume()
+  
     if @refresh? and not @isActive
       @isActive = true
       @refresh()
       @startTimer()      
   
   pause: ->
+    @onPause()
+    
     if @refresh?
       @isActive = false
       @stopTimer()
@@ -45,138 +153,61 @@ class MVCoffee.Controller
     if @refresh?
       @stopTimer()
       
-  # This method must be explicitly called inside of onStart in subclasses that want
-  # to handle form submission through turbolinks.  By default, form submission causes
-  # a full refresh of the page, even with turbolinks enabled.  That may not be what we
-  # want if we have data cached client side.  Calling this method causes form submission
-  # to automagically happen over ajax, just as if turbolinks were handling it.
-  turbolinkForms: (customizations = {}) ->
-    # If this is a Rails 4 project with turbolinks enabled
-    if Turbolinks?
-      self = this
-      # We want to add our own "unobtrusive" javascript on every form on the page
-      jQuery("form").each (index, element) =>
-        # The allowed customizations are "confirm" and "model"
-        if customizations[element.id]?
-          customization = customizations[element.id]
-          $(element).submit ->
-            doPost = true
-            # The "confirm" customization pops up a confirm dialog
-            confirm = customization.confirm
-            if confirm?
-              doPost = window.confirm(confirm)
-            
-            # The "model" customization performs validation with the supplied
-            # model instance.  NOTE:  it must be an instance, not a model 
-            # constructor function.
-            # If validation fails, the method that matches the form's id with
-            # _errors appended will be called with the errors array.
-            model = customization.model
-            if doPost and model?
-              model.populate()
-              method = "#{element.id}_errors"
-              if self[method]?
-                self[method](model.errors)
-              else
-                console.log("!!! method #{method} not implemented !!!")
-              
-              doPost = model.isValid()
-            
-            if doPost
-              self.turbolinksPost element
-              
-            # Always return false to supress a true post 
-            false
-        else
-          # No customizations being done
-          $element = $(element)
-          
-          # Just follow the link if it is a "get"
-          if element.method is "get" or element.method is "GET"
-            $(element).submit ->
-              Turbolinks.visit element.action
-              false
-          else
-            # Or just submit the form if it is a "post"
-            $(element).submit =>
-              self.turbolinksPost(element)
-              false
-      
-      # Do the same thing for a links that have a data-method of "delete"
-      jQuery("a[data-method='delete']").each (index, element) =>
-        # console.log("Found a delete link! url=" + element.href) 
-        jQuery(element).click( =>
-          doPost = true
-          # The "confirm" customization pops up a confirm dialog
-          confirm = jQuery(element).data("confirm")
-          if confirm?
-            doPost = window.confirm(confirm)
+  #==================================================================================
+  #
+  # Refresh policy and callback
+  #
 
-          if doPost
-            jQuery.ajax(
-              url: element.href,
-              type: 'DELETE',
-              success: (data) =>
-                @processServerData(data, element)
-              dataType: "json"
-            )
-          false
-        )
-                    
-  turbolinksPost: (element) ->
-    # console.log "Submiting #{element.id} over turbolinks"
-    jQuery.post(element.action,
-      $(element).serialize(),
-      (data) =>
-        @processServerData(data, element)
-      ,
-      'json')
-    false
-  
-  processServerData: (data, element) ->
-    # console.log "Form submit returned: " + JSON.stringify(data)
-    if data.errors?
-      method = "#{element.id}_errors"
-      # console.log "Calling method on controller: " + method
-      if @[method]?
-        @[method](data.errors)
-      #else
-      # TODO!!!
-      # Do something to alert the user of the error
-    else
-      @manager.loadData(data)
-      # console.log("In controller post: " + JSON.stringify(data))
-      if data.redirect?
-        # @manager.flash = data.flash
-        Turbolinks.visit(data.redirect)
-      else
-        method = element.id
-        if @[method]?
-          @[method](data)
-        # else
-        # TODO!!! Do something?   
-  
   # One minute, 60 millis
   refreshInterval: 60000
   
   # Overrideable template methods
   refresh: null
+
+
+  #==================================================================================
+  #
+  # Life cycle entry points
+  # 
+  
   onStart: ->
+    # no-op unless overridden
+    
+  onPause: ->
+    # no-op unless overridden
+    
+  onResume: ->
     # no-op unless overridden
     
   onStop: ->
     # no-op unless overridden
+    
+  render: ->
+    # no-op unless overridden
+    
+  errors: (errors) =>
+    # Warn that the method was not overridden.
+    console.log("!!!!! The errors method was called on controller #{@toString()} but not implemented!!!!!")
   
   toString: ->
     @id
     
+    
+  #==================================================================================
+  #
+  # Handling the timer.  Do not override or call manually.  This are fired automatically
+  # by the life cycle methods.
+  # 
+  
   startTimer: ->
     if @timerId?
       @stopTimer()
     if @refreshInterval? and @refreshInterval > 0
       self = this
+      @timerCount += 1
       @timerId = setInterval(
-        -> self.refresh.call(self) 
+        -> 
+          self.refresh.call(self) 
         @refreshInterval
       )
     

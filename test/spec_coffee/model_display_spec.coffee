@@ -17,6 +17,7 @@ describe "the displays macro method adds typing to a new field", ->
 
   it "should use the custom display name in error messages", ->
     user = new User({barf: "" })
+    user.validate()
     expect(user.errors[0]).toMatch(/^Horf/)
 
   it "should not modify the parent class's prototype", ->

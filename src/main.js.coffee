@@ -1,3 +1,14 @@
+###
+
+MVCoffee
+
+Copyright 2014, Kirk Bowers
+MIT License
+
+Version 1.0.0
+
+###
+
 # Make sure there is an MVCoffee object on the global namespace
 
 # This little bit of mojo lets us export things into node.js and letting node's 
@@ -16,4 +27,3 @@ else
 if !Array.isArray
   Array.isArray = (arg) ->
     Object.prototype.toString.call(arg) is '[object Array]'
-

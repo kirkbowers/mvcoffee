@@ -1,9 +1,8 @@
 {
   "name": "mvcoffee",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "main": "./lib/mvcoffee.js",
   "dependencies": {
-    "jasmine-node": ">=1.4.2",    
-    "execSync": ">=1.0"
+    "jasmine-node": ">=1.4.2"
   }
 }

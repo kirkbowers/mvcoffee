@@ -22,10 +22,12 @@ describe "the validates macro method adds a validation to an existing field", ->
   
   it "should still validate presence of the quantity property", ->
     user = new User(quantity: "")
+    user.validate()
     expect(user.errors.length).toBe(1)
 
   it "should validate numericality of the quantity property", ->
     user = new User(quantity: -1)
+    user.validate()
     expect(user.errors.length).toBe(1)
     expect(user.errors[0]).toBe("Quantity must be freakin' positive, yo")
 
