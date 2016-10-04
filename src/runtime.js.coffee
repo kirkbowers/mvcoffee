@@ -283,6 +283,9 @@ class MVCoffee.Runtime
       # arguments, then call that function twice, once for forms, once for anchors.
       
       applyClientize = (selector, event, validation, submission) ->
+        # namespace the event
+        event += ".mvcoffee"
+        
         $searchInside.find(selector).each (index, element) ->
 
           customization = {}
@@ -292,6 +295,11 @@ class MVCoffee.Runtime
               customization = thisCustom
 
           unless customization.ignore
+            # Clean off any existing version of this event so it won't fire twice.
+            # We do need to reclientize after a section of the page has been rerendered
+            # so it's good to avoid the double event handler.
+            jQuery(element).off event
+            
             jQuery(element).on event, (eventObject) ->
               callback = element.id
               

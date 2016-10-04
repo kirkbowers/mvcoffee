@@ -211,7 +211,17 @@ class MVCoffee.Model
   # the has_many method in rails.  The best I could think to do was provide both, one
   # as sort of an alias to the other.
   @hasMany: (name, options = {}) ->
-    methodName = options.as || MVCoffee.Pluralizer.pluralize(name)
+    if options.as
+      methodName = options.as
+    else
+      methodName = MVCoffee.Pluralizer.pluralize(name)
+      
+      if options.scope
+        # If there is a scope, prepend it to the name of the child
+        # eg. hasMany 'items', scope: 'inexpensive'
+        #  would create a method named inexpensive_items()
+        methodName = options.scope + '_' + methodName
+  
     
     # Place this on the array of has many associations
     @prototype._associations_children = [] unless @prototype.hasOwnProperty("_associations_children")
@@ -228,6 +238,10 @@ class MVCoffee.Model
       if modelStore?
         constraints = {}
         constraints[foreignKey] = @id
+        
+        if options.scope
+          constraints[options.scope] = true
+        
         if options.through
           joinTable = options.through
           joins = modelStore.where(joinTable, constraints)

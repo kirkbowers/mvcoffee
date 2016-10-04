@@ -13,6 +13,12 @@ represent the data of an application on the client.  Round trips can be avoided 
 * **Automatic refresh of potentially stale data**  These days, your application can be running in several browser windows simultaneously, or even multiple devices (laptop, tablet, phone, etc.) at one time.  If the user changes the data in one window, then returns to another window, that second window is operating with stale data.  MVCoffee automates doing the right thing in this situation.  All you have to do is provide the callbacks for the refresh life cycle (start, pause, resume, stop) and what the refresh policy should be (when the window regains focus, on a timer, or both), and MVCoffee takes care of firing your policy for you.  This can also be used to update UI elements (like a clock) that may have frozen when the user was viewing a different window.
 
 <a name="whats-new"></a>
+# What's new in 1.1
+
+- `scope:` option to `has_many:` method lets you create methods that return a subset of
+the many associated records cached separately from the whole, unscoped set.
+- Clientizing uses jQuery namespaces to avoid creating double event handlers.
+
 # What's new in 1.0
 
 MVCoffee is finally stable enough (hopefully) to be given a "1" in the front of the version number.  The format of the JSON expected from the server was strongly refactored in version 1.0, so <= 0.3 version JSON will cause version 1 to gack.  This shouldn't be a problem for two reasons.  One, the new JSON format must contain a version number in it.  If it is missing, or if it contains a number earlier than expected by the Model Store, an exception is thrown.  Two, there is now a Rails gem [mvcoffee-rails](https://github.com/kirkbowers/mvcoffee-rails) that provides an API to generate the expected JSON format and includes the matching mvcoffee.js into your rails project.  Except in the extreme off chance that you are using this outside of Rails, you should never have to concern yourself with the JSON format or build it manually.
