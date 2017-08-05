@@ -7,6 +7,7 @@ ControllerTest::Application.routes.draw do
   get "form/get_form"
   delete "form/delete"
   post "form/post_link"
+  post "form/post_multiple_buttons"
   
   root to: "test#index"
 

@@ -120,6 +120,21 @@
 
   <% end %>
 
+
+  <h3>This should post, redirect to another page with the name value and which button was pressed in the flash message, and increment the page count</h3>
+
+  <%= form_tag form_post_multiple_buttons_path, method: :post do %>
+
+    <p>
+      <%= label_tag :name, 'Name' %>
+      <%= text_field_tag :name %>
+    </p>
+
+    <%= submit_tag "Alpha", name: 'alpha' %>
+    <%= submit_tag "Beta", name: 'beta' %>
+
+  <% end %>
+
 </div>
 
 <h2>These forms and links have not!</h2>

@@ -94,6 +94,25 @@ class FormController < ApplicationController
     end  
   end
   
+  def post_multiple_buttons
+    @name = params[:name]
+    if params[:alpha]
+      @button = 'Alpha'
+    elsif params[:beta]
+      @button = 'Beta'
+    end
+    @mvcoffee[:flash][:message] = "Form posted with value #{@name} and button #{@button}"
+    @mvcoffee[:redirect] = form_other_path
+    respond_to do |format|
+      format.html {
+        redirect_to form_other_path, "Form posted with value #{@name} and button #{@button}"
+      }
+      format.json { 
+        render json: @mvcoffee
+      }
+    end  
+  end
+
 private
   def prepare_mvcoffee_object
     session = cookies[:mvcoffee_session]
