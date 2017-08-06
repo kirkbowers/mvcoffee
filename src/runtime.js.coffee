@@ -141,7 +141,6 @@ class MVCoffee.Runtime
           error_callback_message = ["#{callback_message}_errors", "errors"]
         else
           error_callback_message = "errors"
-        end
         @broadcast error_callback_message, @errors
       else
         # If there is a success callback implemented for this form that was submitted,
@@ -255,6 +254,16 @@ class MVCoffee.Runtime
   
   clientize: (scope = null) =>
     # @log ">>> begin clientize"
+    
+    # Set up being able to recognize which button was clicked when a form is submitted.
+    # Thanks to hunter: 
+    # http://stackoverflow.com/questions/5721724/jquery-how-to-get-which-button-was-clicked-upon-form-submission
+    jQuery("form input[type=submit]").off('click.mvcoffee')
+    jQuery("form input[type=submit]").on( 'click.mvcoffee', ->
+      jQuery("input[type=submit]", jQuery(this).parents("form")).removeAttr("clicked")
+      jQuery(this).attr("clicked", "true")
+    )
+    
     if Turbolinks?
       self = this
       
@@ -352,6 +361,19 @@ class MVCoffee.Runtime
         (customization, callback) ->
           model = customization.model
           if model?
+            skipValidation = customization.skipValidation
+            # console.log "Skip validation = " + skipValidation
+            if skipValidation
+              button = jQuery("input[type=submit][clicked=true]").attr('name')
+              console.log "button pressed = " + button
+              if Array.isArray(skipValidation)
+                if skipValidation.includes button
+                  console.log "Skipping validation"
+                  return true
+              else if button is skipValidation
+                console.log "Skipping validation"
+                return true
+   
             model.populate()
             method = "errors"
             if callback
@@ -477,8 +499,16 @@ class MVCoffee.Runtime
     element = submitee
     if submitee instanceof jQuery
       element = submitee.get(0)
+    submission = jQuery(element).serializeArray()
+    button = jQuery("input[type=submit][clicked=true]").attr('name')
+    # console.log "Inside submit, button = " + button
+    if button
+      submission.push
+        name: button
+        value: button
+    # console.log "submission = " + jQuery.param(submission)
     jQuery.post(element.action,
-      jQuery(element).serialize(),
+      jQuery.param(submission),
       (data) =>
         @processServerData(data, callback_message)
       ,
